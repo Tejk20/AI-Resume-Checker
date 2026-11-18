@@ -12,6 +12,8 @@ This is a complete React + FastAPI + PostgreSQL deployment, with the existing CP
 
 ## Free-only condition
 
+Preparation was verified on 18 November 2026: **45 backend tests**, **nine frontend tests**, the frontend build, and the [full GitHub container workflow](https://github.com/Tejk20/AI-Resume-Checker/actions/runs/44246490525) passed. The GitHub workflow built the Linux Docker image, started PostgreSQL, verified the compiled frontend/API and ran the real 12-resume/three-JD MPNet workflow. This verifies the deployment package; it does **not** mean a Codespace or a permanent public deployment has been launched. Launch remains gated on available free allowance, a $0 usage cap and Codespaces authorization.
+
 Codespaces is a cloud development/demo environment, **not permanent 24/7 website hosting**. GitHub personal accounts include a compute/storage allowance. Two-core compute consumes two core-hours per hour; storage also counts while a Codespace exists. Set a $0 Codespaces budget with usage stopping at the limit, check remaining allowance, and keep paid usage disabled before creating it. Idle stopping and short retention reduce consumption. No payment method or paid-plan upgrade is required for included-quota use.
 
 Official references: [GitHub Codespaces billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces), [Codespaces overview](https://docs.github.com/en/codespaces/about-codespaces/what-are-codespaces), [sharing forwarded ports](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace).

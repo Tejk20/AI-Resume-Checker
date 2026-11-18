@@ -1,5 +1,12 @@
 # Verification record
 
+## GitHub deployment preparation — 18 November 2026
+
+- Local backend: **45 passed** with both real models and hosted SPA/API boundary tests.
+- Frontend: **nine passed**; production build passed with same-origin API configuration.
+- [GitHub Linux container checks](https://github.com/Tejk20/AI-Resume-Checker/actions/runs/44246490525): **passed**, including Docker build, PostgreSQL startup, frontend/API health and the real synthetic 12-resume/three-JD MPNet workflow.
+- A Codespace/public app has **not** been launched yet: personal billing totals were unavailable through the current GitHub connection, and the existing CLI authorization lacks Codespaces access. The free-only condition requires confirmation of remaining allowance and a $0 spending cap before resource creation. No paid resource was created.
+
 ## Active job selector update — 18 November 2026
 
 Frontend tests: **nine passed** across four files. Production build: **passed**. Verified that AI Engineer and AI/ML Engineer share one role option while both saved descriptions remain independently selectable; an arbitrary saved role is searchable; keyboard selection works; and an arbitrary new title opens the prefilled Create Job form. Common title suggestions are optional, not a restriction on supported jobs. The job list refreshes on navigation/window focus. Grouping is presentation-only: original job IDs, JDs, candidates, model results and histories are preserved. No backend/schema/data changes were made for this UI update. Browser visual QA remains unverified.
