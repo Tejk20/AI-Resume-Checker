@@ -1,0 +1,1 @@
+All 12 candidate identities, employers and contact details are synthetic. Six PDF and six DOCX resumes cover backend, frontend, ML and unrelated roles. Finley has incomplete evidence. Generate again with python scripts/generate_samples.py. Never replace these with real candidate data in Git.

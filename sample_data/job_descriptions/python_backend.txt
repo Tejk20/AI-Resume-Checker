@@ -1,0 +1,6 @@
+We are looking for a Python Backend Developer with at least 3 years of experience.
+Required skills: Python, FastAPI, PostgreSQL, REST APIs, Docker.
+AWS knowledge is preferred.
+Build reliable REST APIs and optimize relational database queries.
+Design backend services and deploy containerized applications.
+Bachelor degree in Computer Science or equivalent experience.

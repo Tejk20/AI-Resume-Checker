@@ -1,0 +1,6 @@
+AI/ML Engineer with at least 2 years of experience.
+Required skills: Python, PyTorch, scikit-learn, NLP, pandas, NumPy.
+Sentence Transformers and Docker preferred.
+Train and evaluate machine learning models and build NLP pipelines.
+Develop semantic search with sentence embeddings.
+Master degree in Computer Science or equivalent experience.

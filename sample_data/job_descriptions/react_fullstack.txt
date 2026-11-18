@@ -1,0 +1,6 @@
+React Full Stack Developer with at least 2 years of experience.
+Required skills: ReactJS, JavaScript, NodeJS, HTML, CSS, RESTful APIs.
+TypeScript and PostgreSQL preferred.
+Build accessible responsive interfaces and integrate web APIs.
+Develop frontend components and backend services.
+Bachelor degree in Computer Science or equivalent experience.
