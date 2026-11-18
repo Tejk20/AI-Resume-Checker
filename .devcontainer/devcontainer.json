@@ -1,6 +1,6 @@
 {
   "name": "AI Resume Checker demo",
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
   "features": {"ghcr.io/devcontainers/features/docker-in-docker:2": {}},
   "hostRequirements": {"cpus": 2, "memory": "8gb"},
   "postCreateCommand": "bash scripts/codespaces-start.sh --build",
@@ -10,5 +10,5 @@
     "8000": {"label": "AI Resume Checker", "onAutoForward": "notify"}
   },
   "otherPortsAttributes": {"onAutoForward": "ignore"},
-  "remoteUser": "codespace"
+  "remoteUser": "vscode"
 }

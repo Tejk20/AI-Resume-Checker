@@ -27,14 +27,11 @@ Official references: [GitHub Codespaces billing](https://docs.github.com/en/bill
 5. Share the returned `https://<codespace-name>-8000.app.github.dev` URL. It works only while this Codespace and the application are running. It is not a GitHub Pages address.
 6. Use synthetic documents from the repository for demonstration. Existing authentication/retention/production-hardening limitations still apply; do not upload real resumes to a public demo.
 
-CLI alternative after granting the GitHub CLI `codespace` permission:
+Use the browser-based launch and Ports panel above; no additional GitHub CLI OAuth permissions or organization access are needed.
 
-```powershell
-gh auth refresh -h github.com -s codespace
-gh codespace create -R Tejk20/AI-Resume-Checker -b main --idle-timeout 10m --retention-period 24h --display-name resume-checker-demo
-# Use the actual returned Codespace name:
-gh codespace ports visibility 8000:public -c <codespace-name>
-```
+### Recover an existing Codespace
+
+If the creation log reports `unable to find user codespace: no matching entries in passwd file`, update the repository in the recovery terminal with `git pull --ff-only origin main`. Then open the command palette and run **Codespaces: Rebuild Container**. The configuration uses the standard Ubuntu base image and its existing `vscode` account; Docker runs the application and database separately. Rebuilding is required to replace the failed container; restarting alone reuses it.
 
 No Codespace is automatically created by the repository's workflow. Creating one requires the account's authorization and available free allowance. Stop it from the Codespaces page when finished and delete it when no longer needed to release storage.
 
