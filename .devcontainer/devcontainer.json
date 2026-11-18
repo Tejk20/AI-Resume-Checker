@@ -1,0 +1,14 @@
+{
+  "name": "AI Resume Checker demo",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {"ghcr.io/devcontainers/features/docker-in-docker:2": {}},
+  "hostRequirements": {"cpus": 2, "memory": "8gb"},
+  "postCreateCommand": "bash scripts/codespaces-start.sh --build",
+  "postStartCommand": "bash scripts/codespaces-start.sh",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {"label": "AI Resume Checker", "onAutoForward": "notify"}
+  },
+  "otherPortsAttributes": {"onAutoForward": "ignore"},
+  "remoteUser": "codespace"
+}

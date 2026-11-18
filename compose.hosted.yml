@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: resume
+      POSTGRES_PASSWORD: local_codespace_only
+      POSTGRES_DB: resume_matcher
+    volumes:
+      - hosted_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resume -d resume_matcher"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://resume:local_codespace_only@db:5432/resume_matcher
+      CORS_ORIGINS: '[]'
+      EMBEDDING_MODEL: sentence-transformers/all-mpnet-base-v2
+    ports:
+      - "8000:8000"
+    volumes:
+      - hosted_uploads:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  hosted_pgdata:
+  hosted_uploads:

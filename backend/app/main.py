@@ -8,6 +8,7 @@ from app.core.database import engine
 from app.core.config import settings
 from app.api.routes import router
 from app.services.workers import recover_interrupted, EXECUTOR
+from app.services.frontend import mount_frontend
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,3 +38,6 @@ def health():
         return {'status':'ok','database':'connected','semantic_model':settings.model_name,'model_loading':'cached on first matching request'}
     except Exception:
         return JSONResponse(status_code=503,content={'status':'unhealthy','database':'unavailable'})
+
+
+mount_frontend(app, settings.frontend_dist)

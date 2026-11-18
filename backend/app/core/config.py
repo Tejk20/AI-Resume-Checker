@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     embedding_batch_size: int = Field(default=32, ge=1, le=128)
     scoring_weights: dict[str, float] = Field(default_factory=lambda: {'semantic': .25, 'skill': .40, 'experience': .25, 'education': .10})
     model_cache: str = '../.model-cache'
+    frontend_dist: Path | None = None
 
     @field_validator('scoring_weights')
     @classmethod
@@ -25,6 +26,17 @@ class Settings(BaseSettings):
         if any(not math.isfinite(v) or v < 0 or v > 1 for v in values.values()) or not math.isclose(sum(values.values()), 1.0, abs_tol=1e-9):
             raise ValueError('Scoring weights must be finite, nonnegative, and sum to 1.0.')
         return values
+
+    @field_validator('database_url', mode='before')
+    @classmethod
+    def use_psycopg_driver(cls, value):
+        # Hosting providers commonly supply a plain PostgreSQL URL.
+        if isinstance(value, str):
+            if value.startswith('postgres://'):
+                return value.replace('postgres://', 'postgresql+psycopg://', 1)
+            if value.startswith('postgresql://'):
+                return value.replace('postgresql://', 'postgresql+psycopg://', 1)
+        return value
 
     @property
     def model_name(self):

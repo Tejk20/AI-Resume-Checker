@@ -96,6 +96,8 @@ The script loads the real model, embeds two sentences and prints a measured cosi
 
 ## Run the application
 
+For the GitHub-based full-app demo, see [deployment instructions](docs/deployment.md). The repository includes a CPU-only Docker image, private PostgreSQL service, same-origin React/API serving and a Codespaces configuration. Codespaces is a quota-limited demo environment rather than permanent hosting; launching it requires available free allowance and a $0 spending limit. No paid resource is provisioned by the repository.
+
 Terminal 1:
 
 ```powershell
@@ -243,7 +245,7 @@ cd ..
 .\.venv\Scripts\python.exe scripts/verify_mpnet_upgrade.py
 ```
 
-The real-model suite currently has **43 passing backend tests** (ordinary offline unit runs skip two opt-in real-model cases). The frontend has **nine passing tests**, including grouped job selection, keyboard search, arbitrary title creation and prefilled forms. The upgrade verifier creates a separate, uniquely named PostgreSQL database using only the synthetic samples. It starts/stops its own test API processes, checks MiniLM history, rematches twice with MPNet and verifies persistence after an OS-process restart. It preserves the live application's records. Reports/logs go to ignored `test-artifacts/`. Optional `psutil` enables memory sampling in the comparison script; unavailable memory measurements are explicitly null. `scripts/rematch_saved_jobs.py` refreshes live saved jobs without uploading duplicates and checks that previous scores were archived.
+The real-model suite currently has **45 passing backend tests** (ordinary offline unit runs skip two opt-in real-model cases), including hosted SPA/API boundaries and provider PostgreSQL URL handling. The frontend has **nine passing tests**, including grouped job selection, keyboard search, arbitrary title creation and prefilled forms. The upgrade verifier creates a separate, uniquely named PostgreSQL database using only the synthetic samples. It starts/stops its own test API processes, checks MiniLM history, rematches twice with MPNet and verifies persistence after an OS-process restart. It preserves the live application's records. Reports/logs go to ignored `test-artifacts/`. Optional `psutil` enables memory sampling in the comparison script; unavailable memory measurements are explicitly null. `scripts/rematch_saved_jobs.py` refreshes live saved jobs without uploading duplicates and checks that previous scores were archived.
 
 Follow [the demo guide](docs/demo-guide.md) for a step-by-step presentation and interview answers. [Architecture](docs/architecture.md) explains boundaries and concurrency. [Matching algorithm](docs/matching-algorithm.md) lets you reproduce a score manually.
 
