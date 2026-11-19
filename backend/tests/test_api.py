@@ -215,3 +215,36 @@ def test_demo_seed_is_idempotent_and_produces_scored_records(client,monkeypatch)
     stats=client.get('/api/v1/dashboard').json()
     assert stats['total_jobs']==3 and stats['total_evaluated']==36
     assert stats['average_score']>0 and sum(b['count'] for b in stats['distribution'])==36
+
+
+def test_sample_copy_is_private_empty_and_accepts_the_recruiters_resume(client,monkeypatch):
+    from app.models import Job
+    monkeypatch.setattr(settings,'auth_required',True)
+    with workers.SessionLocal() as db:
+        sample=Job(title='Sample Python Role',raw_text='Build reliable Python and FastAPI services.',
+                   required_skills=['Python','FastAPI'],preferred_skills=['Docker'],
+                   min_experience=3,qualifications=['Bachelor degree'],
+                   responsibilities=['Build backend APIs'],is_demo=True)
+        db.add(sample); db.commit(); source_id=str(sample.id)
+    source='/api/v1/jobs/'+source_id
+    assert client.post(source+'/copy').status_code==401
+    signup_account(client,'copy-owner')
+    response=client.post(source+'/copy')
+    assert response.status_code==201,response.text
+    copy=response.json(); target='/api/v1/jobs/'+copy['id']
+    assert copy['id']!=source_id and copy['is_demo'] is False
+    assert copy['required_skills']==['Python','FastAPI']
+    assert copy['min_experience']==3 and copy['match_status']=='idle'
+    assert client.get(target+'/candidates').json()['total']==0
+    assert client.get(target+'/rankings').json()['total']==0
+    path=next((Path(__file__).resolve().parents[2]/'sample_data/synthetic_resumes').glob('*.pdf'))
+    assert client.post(target+'/resumes',files=[('files',(path.name,path.read_bytes()))]).status_code==202
+    assert client.get(target+'/candidates').json()['total']==1
+    assert client.get(source+'/candidates').json()['total']==0
+    assert client.get(source).json()['is_demo'] is True
+    client.patch(target,json={'required_skills':['SQL']})
+    assert client.get(source).json()['required_skills']==['Python','FastAPI']
+    client.post('/api/v1/auth/logout')
+    assert client.get(target).status_code==404
+    signup_account(client,'different-owner')
+    assert client.post(target+'/copy').status_code==404

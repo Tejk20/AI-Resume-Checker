@@ -16,6 +16,7 @@ Hosted writes require an authenticated `avom_session` cookie. Private jobs and n
 | POST | `/jobs/upload` | Multipart `title`, `file` PDF/DOCX; 201 saved job |
 | GET | `/jobs` | `offset=0&limit=50` (1–100); newest first |
 | GET | `/jobs/{job_id}` | Reviewed/extracted requirements, raw JD, matching status/error |
+| POST | `/jobs/{job_id}/copy` | 201 new private job using the visible source's requirements; sample candidates/results are not copied |
 | PATCH | `/jobs/{job_id}` | Any requirement fields below; 200 updated job; clears stale match results |
 | POST | `/jobs/{job_id}/resumes` | Multipart repeated `files`; 1–50; 202 batch |
 | GET | `/batches/{batch_id}` | Status, total_files, processed_files (successes), failed_files, errors, timestamps |

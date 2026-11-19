@@ -197,7 +197,7 @@ export default function JobPicker({ jobs, selected, onChange }) {
             >
               {selectedGroup.jobs.map((job, index) => (
                 <option key={job.id} value={job.id}>
-                  Description {index + 1} ·{" "}
+                  {job.is_demo ? 'Sample job' : 'Your job'} · Description {index + 1} ·{" "}
                   {job.required_skills?.slice(0, 3).join(", ") ||
                     "Review requirements"}{" "}
                   ·{" "}

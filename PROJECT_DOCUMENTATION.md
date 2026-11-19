@@ -4,7 +4,7 @@
 
 **Documentation date:** 19 November 2026
 
-**Source baseline:** `08f2492` — recruiter accounts and populated sample workspace
+**Source baseline:** `08f2492` — recruiter accounts and populated sample workspace, with the subsequent private-copy upload flow described below
 
 **Repository:** <https://github.com/Tejk20/AI-Resume-Checker>
 
@@ -358,7 +358,7 @@ Signup collects full name, email, password and confirmation. Login uses email/pa
 
 ### Upload resumes — `/upload`
 
-Choose a private job, select/drop up to 50 PDFs/DOCXs, upload and wait for parsing. Individual failures appear without discarding successful documents. Run matching once readable candidate records exist. Sample jobs cannot be used for uploads or rematching.
+Choose a job, select/drop up to 50 PDFs/DOCXs, upload and wait for parsing. For a sample job, **Upload to my own copy** first creates a private copy of its reviewed requirements and uploads the selected files there. It does not copy the sample candidates or change the public job. Existing private jobs upload directly. Individual failures appear without discarding successful documents. Run matching once readable candidate records exist; the page explains when processing still blocks that action. Sample jobs themselves remain protected from uploads/rematching, with an active link to their existing sample rankings.
 
 ### Candidate ranking — `/rankings`
 
@@ -762,6 +762,7 @@ JSON names use snake_case; IDs are UUIDs. Paginated resources return `{ "items":
 | POST | `/jobs/upload` | Multipart `title` and `file`; 201 |
 | GET | `/jobs` | Visible jobs; private jobs before sample jobs, then newest first |
 | GET | `/jobs/{job_id}` | Visible job details and matching status |
+| POST | `/jobs/{job_id}/copy` | Copy visible job requirements into a new private job; 201; no candidates or results copied |
 | PATCH | `/jobs/{job_id}` | Correct private job requirements; archive/invalidate old results |
 | POST | `/jobs/{job_id}/resumes` | Multipart repeated `files`; private writable job; 202 |
 | GET | `/batches/{batch_id}` | Visible-job batch progress and errors |
@@ -1114,7 +1115,8 @@ The live anonymous dashboard was verified with three jobs, 36 resumes and 36 res
 |---|---|
 | Full backend suite | 49 passed, two optional model tests skipped |
 | Affected API/auth/model-serving tests | 20 passed, two optional model tests skipped |
-| Frontend suite | 12 passed across five files |
+| Latest upload/copy API regression | Nine passed, including source protection and cross-account access |
+| Frontend suite after the upload-flow fix | 15 passed across six files |
 | Production frontend build | Passed |
 | Python source parsing | Passed for the inspected application/migration/workflow files |
 | Patch whitespace checks | Passed before publication |
@@ -1214,6 +1216,7 @@ Scores should support human review. Explicitly missing evidence and uncertain qu
 | 401 on create/upload/match | Sign in and confirm the session cookie is sent |
 | Signin does not persist locally | Secure cookie on HTTP, inconsistent localhost/127.0.0.1 hosts, or CORS/cookie mismatch |
 | 403 when editing a sample | Expected read-only sample; create a private job |
+| Upload/match buttons seem disabled on a sample | Select a CV and use **Upload to my own copy**; the app creates a private job and enables matching when parsing finishes. Older cached pages need a hard refresh. |
 | 403 origin error | Public-origin/CORS configuration does not match the browser URL |
 | 404 for a known private candidate | Current account does not own its job, session expired, or selected ID belongs to a different account |
 | 409 processing conflict | Wait for that job's upload/match to finish |

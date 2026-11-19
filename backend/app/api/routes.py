@@ -1,4 +1,5 @@
 from pathlib import Path
+from copy import deepcopy
 from uuid import UUID, uuid4
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
@@ -60,6 +61,19 @@ def jobs(db: DB, offset: int=Query(0,ge=0), limit: int=Query(50,ge=1,le=100), us
 
 @router.get('/jobs/{job_id}',response_model=JobOut)
 def get_job(job_id: UUID,db: DB,user=Depends(current_user)): return job_or_404(db,job_id,user)
+
+
+@router.post('/jobs/{job_id}/copy', response_model=JobOut, status_code=201)
+def copy_job(job_id: UUID, db: DB, user=Depends(current_user)):
+    if settings.auth_required and not user:
+        raise HTTPException(401, 'Sign in to create your own copy of this job.')
+    source = job_or_404(db, job_id, user)
+    fields = ['title', 'raw_text', 'required_skills', 'preferred_skills',
+              'min_experience', 'qualifications', 'responsibilities', 'extraction_warnings']
+    job = Job(**{field: deepcopy(getattr(source, field)) for field in fields},
+              owner_id=user.id if user else None, is_demo=False)
+    db.add(job); db.commit(); db.refresh(job)
+    return job
 
 
 @router.patch('/jobs/{job_id}',response_model=JobOut)

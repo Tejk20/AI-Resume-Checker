@@ -48,6 +48,7 @@ export function groupJobs(jobs) {
   for (const group of groups.values()) {
     group.jobs.sort(
       (a, b) =>
+        Number(Boolean(a.is_demo)) - Number(Boolean(b.is_demo)) ||
         Number(b.match_status === "completed") -
           Number(a.match_status === "completed") ||
         String(b.created_at || "").localeCompare(String(a.created_at || "")) ||

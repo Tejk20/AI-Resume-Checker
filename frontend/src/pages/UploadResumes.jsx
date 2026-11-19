@@ -27,10 +27,16 @@ export default function UploadResumes({
     [matchStatus, setMatchStatus] = useState(""),
     [count, setCount] = useState(0);
   const input = useRef();
+  const uploadSelection = useRef(null);
   const sampleJob = jobs.find(job => job.id === selected)?.is_demo;
   useEffect(() => {
-    setFiles([]);
-    setBatch(null);
+    let alive = true;
+    // Creating a private copy is part of the same upload, not a new file selection.
+    if (uploadSelection.current !== selected) {
+      setFiles([]);
+      setBatch(null);
+    }
+    uploadSelection.current = null;
     setError("");
     setMatching(false);
     setMatchStatus("");
@@ -38,16 +44,18 @@ export default function UploadResumes({
     if (selected) {
       api
         .get(`/jobs/${selected}/candidates`)
-        .then((r) => setCount(r.data.total))
-        .catch((e) => setError(errorMessage(e)));
+        .then((r) => { if (alive) setCount(r.data.total); })
+        .catch((e) => { if (alive) setError(errorMessage(e)); });
       api
         .get("/jobs/" + selected)
         .then((r) => {
+          if (!alive) return;
           setMatching(r.data.match_status === "processing");
           setMatchStatus(r.data.match_status);
         })
-        .catch((e) => setError(errorMessage(e)));
+        .catch((e) => { if (alive) setError(errorMessage(e)); });
     } else setCount(0);
+    return () => { alive = false; };
   }, [selected]);
   useEffect(() => {
     if (!batch || !["pending", "processing"].includes(batch.status)) return;
@@ -116,13 +124,23 @@ export default function UploadResumes({
     setFiles(valid);
   }
   async function upload() {
+    if (!selected || !files.length || processing) return;
     setBusy(true);
     setError("");
     setProgress(0);
     const form = new FormData();
     files.forEach((f) => form.append("files", f));
     try {
-      const { data } = await api.post(`/jobs/${selected}/resumes`, form, {
+      let target = selected;
+      if (sampleJob) {
+        const { data: copied } = await api.post(`/jobs/${selected}/copy`);
+        target = copied.id;
+        uploadSelection.current = target;
+        setSelected(target);
+        // The upload can proceed even if refreshing the navigation temporarily fails.
+        await refreshJobs().catch(() => {});
+      }
+      const { data } = await api.post(`/jobs/${target}/resumes`, form, {
         onUploadProgress: (e) =>
           setProgress(Math.round((e.loaded / (e.total || 1)) * 100)),
       });
@@ -158,7 +176,7 @@ export default function UploadResumes({
         failure won’t stop the batch.
       </Heading>
       <JobSelect {...{ jobs, selected, onChange: setSelected }} />
-      {sampleJob && <div className="notice">This sample job is read-only. <Link className="text-link" to="/jobs/new">Create your own job</Link> to upload resumes and run matching.</div>}
+      {sampleJob && <div className="notice">You are viewing a sample job. Uploading your CV will create a private copy of its requirements for your account. The sample candidates stay separate. You can also <Link className="text-link" to="/jobs/new">create a different job</Link>.</div>}
       {!jobs.length && (
         <div className="notice">
           Create a job first.{" "}
@@ -199,12 +217,13 @@ export default function UploadResumes({
             <p>
               or <span className="text-link">browse your files</span>
             </p>
-            <small>Private local storage · Multiple files supported</small>
+            <small>PDF and DOCX · Select up to 50 files</small>
             <input
               ref={input}
               hidden
               multiple
               type="file"
+              aria-label="Resume files"
               accept=".pdf,.docx"
               onChange={(e) => {
                 add(e.target.files);
@@ -215,7 +234,7 @@ export default function UploadResumes({
           {files.length > 0 && (
             <>
               <div className="list-head">
-                <strong>{files.length} files selected</strong>
+                <strong>{files.length} {files.length === 1 ? 'file' : 'files'} selected</strong>
                 <button
                   disabled={processing}
                   className="text-link"
@@ -246,12 +265,14 @@ export default function UploadResumes({
           )}
           <button
             className="primary full"
-            disabled={sampleJob || !selected || !files.length || processing}
+            disabled={!selected || !files.length || processing}
             onClick={upload}
           >
             <UploadCloud size={17} />
-            {busy ? `Uploading ${progress}%` : "Upload & process resumes"}
+            {busy ? `Uploading ${progress}%` : sampleJob ? 'Upload to my own copy' : "Upload & process resumes"}
           </button>
+          {sampleJob && <p className="small muted">Your CV is only selected so far. Click above to create your private job and process it.</p>}
+          {!selected && <p className="small muted">Select a job above to enable uploading.</p>}
           {busy && <progress value={progress} max="100" />}
         </section>
         <div>
@@ -298,12 +319,12 @@ export default function UploadResumes({
             <span className="eyebrow">READY FOR THE NEXT STEP?</span>
             <h2>Find the strongest alignment.</h2>
             <p className="muted">
-              {count} parsed candidates in this job. Matching uses local
+              {count} {sampleJob ? 'sample' : 'parsed'} candidates in this job. Matching uses local
               sentence embeddings, skill coverage, and evidence.
             </p>
-            <button
+            {sampleJob ? <><Link className="primary full" to="/rankings">View sample rankings</Link><p className="small muted">To get your own match score, upload your CV using “Upload to my own copy”.</p></> : <button
               className="primary full"
-              disabled={sampleJob || !selected || !count || processing}
+              disabled={!selected || !count || processing}
               onClick={run}
             >
               {matching ? (
@@ -312,14 +333,16 @@ export default function UploadResumes({
                 <Play size={17} />
               )}{" "}
               {matching ? "Evaluating candidates…" : "Run matching"}
-            </button>
+            </button>}
+            {!sampleJob && !count && !processing && <p className="small muted">Upload and process a CV first to enable matching.</p>}
+            {!sampleJob && batch && ['pending','processing'].includes(batch.status) && <p className="small muted">Your CV is being processed. Matching will be available when processing finishes.</p>}
             {matching && (
               <p className="small muted">
                 The first run may download the open-source model. The API stays
                 responsive.
               </p>
             )}
-            {matchStatus === "completed" && (
+            {!sampleJob && matchStatus === "completed" && (
               <Link className="text-link" to="/rankings">
                 View candidate rankings →
               </Link>
