@@ -1,10 +1,15 @@
 # Avom Resume Intelligence — Complete Project Documentation
 
-**AI Resume Matching and Candidate Ranking Application**  
-**Documentation date:** 19 November 2026  
-**Source baseline:** `08f2492` — recruiter accounts and populated sample workspace  
-**Repository:** <https://github.com/Tejk20/AI-Resume-Checker>  
-**Live application:** <https://avom-resume-checker.onrender.com>  
+**AI Resume Matching and Candidate Ranking Application**
+
+**Documentation date:** 19 November 2026
+
+**Source baseline:** `08f2492` — recruiter accounts and populated sample workspace
+
+**Repository:** <https://github.com/Tejk20/AI-Resume-Checker>
+
+**Live application:** <https://avom-resume-checker.onrender.com>
+
 **Signup:** <https://avom-resume-checker.onrender.com/signup>
 
 This guide explains what was built, how its code works, how scores are calculated, how data moves through the system, how to run and deploy it, and what remains limited. It describes the implemented application rather than an imagined production system. Commands assume the repository root unless a different directory is stated. No real database credentials or account passwords are included.
@@ -735,9 +740,12 @@ This design requires one API process. It does not provide database-transaction l
 
 ## 18. API reference
 
-**Production base:** `https://avom-resume-checker.onrender.com/api/v1`  
-**Local base:** `http://127.0.0.1:8000/api/v1`  
-**OpenAPI UI:** `/docs`  
+**Production base:** `https://avom-resume-checker.onrender.com/api/v1`
+
+**Local base:** `http://127.0.0.1:8000/api/v1`
+
+**OpenAPI UI:** `/docs`
+
 **OpenAPI JSON:** `/openapi.json`
 
 JSON names use snake_case; IDs are UUIDs. Paginated resources return `{ "items": [...], "total": n }`. Session cookies authenticate account requests.
