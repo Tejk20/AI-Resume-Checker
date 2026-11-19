@@ -1,5 +1,7 @@
 # Avom · Resume Intelligence
 
+**Complete guide:** [How the entire project was built](PROJECT_DOCUMENTATION.md) — architecture, all features, matching mathematics, database, accounts, API, setup, hosting, testing and maintenance.
+
 A local AI resume matching application for the Avom Consultants internship assignment. Recruiters create a job, review extracted requirements, upload a mixed PDF/DOCX batch, and inspect persisted, explainable candidate rankings. Every demonstration identity is fictional.
 
 The problem: keyword counts alone miss similar experience and conceal why candidates rank differently. This application separates semantic evidence, exact skill coverage, relevant dated employment, and qualifications. Its compatibility score is a heuristic against a JD, **not a hiring probability or an objective assessment of a person**.
@@ -248,7 +250,7 @@ cd ..
 .\.venv\Scripts\python.exe scripts/verify_mpnet_upgrade.py
 ```
 
-The real-model suite currently has **45 passing backend tests** (ordinary offline unit runs skip two opt-in real-model cases), including hosted SPA/API boundaries and provider PostgreSQL URL handling. The frontend has **nine passing tests**, including grouped job selection, keyboard search, arbitrary title creation and prefilled forms. The upgrade verifier creates a separate, uniquely named PostgreSQL database using only the synthetic samples. It starts/stops its own test API processes, checks MiniLM history, rematches twice with MPNet and verifies persistence after an OS-process restart. It preserves the live application's records. Reports/logs go to ignored `test-artifacts/`. Optional `psutil` enables memory sampling in the comparison script; unavailable memory measurements are explicitly null. `scripts/rematch_saved_jobs.py` refreshes live saved jobs without uploading duplicates and checks that previous scores were archived.
+The backend suite contains **51 tests**; the latest local run had **49 passed and two opt-in real-model tests skipped**. Coverage includes accounts, ownership isolation, idempotent sample seeding, scoring, hosted SPA/API boundaries and PostgreSQL URL handling. Both GitHub container workflows separately passed real MPNet inference. The frontend has **12 passing tests**, including account forms, grouped job selection, keyboard search, arbitrary title creation and prefilled forms. The upgrade verifier creates a separate, uniquely named PostgreSQL database using only the synthetic samples. It starts/stops its own test API processes, checks MiniLM history, rematches twice with MPNet and verifies persistence after an OS-process restart. It preserves the live application's records. Reports/logs go to ignored `test-artifacts/`. Optional `psutil` enables memory sampling in the comparison script; unavailable memory measurements are explicitly null. `scripts/rematch_saved_jobs.py` refreshes live saved jobs without uploading duplicates and checks that previous scores were archived.
 
 Follow [the demo guide](docs/demo-guide.md) for a step-by-step presentation and interview answers. [Architecture](docs/architecture.md) explains boundaries and concurrency. [Matching algorithm](docs/matching-algorithm.md) lets you reproduce a score manually.
 

@@ -1,5 +1,24 @@
 # Verification record
 
+## Current live deployment and accounts — 19 November 2026
+
+This section supersedes earlier status statements about publication, Docker, authentication and hosting. The older entries below are retained as dated historical records.
+
+- Live application: <https://avom-resume-checker.onrender.com>; signup at `/signup`.
+- Source baseline: `08f2492`, recruiter accounts and populated read-only sample workspace.
+- Latest full local backend suite: **49 passed, two optional real-model tests skipped**; frontend: **12 passed**, production build passed.
+- [Updated free-host container check](https://github.com/Tejk20/AI-Resume-Checker/actions/runs/44551396602): **passed** with real ONNX MPNet, account/private-job workflow and public sample seeding under a hard 512 MiB/no-swap cap, without OOM or container restart.
+- [Updated normal PyTorch container check](https://github.com/Tejk20/AI-Resume-Checker/actions/runs/44551396549): **passed** with real matching and PostgreSQL.
+- Live anonymous overview: **3 jobs, 36 parsed resume records, 36 evaluations**, completed sample seed, average score **32.92** at verification. The same 12 fictional profiles appear under three roles.
+- Live signup, Secure/HttpOnly/SameSite cookie, authenticated session, logout, signin again and logout: **passed** using one clearly synthetic QA account; no recruiter jobs modified.
+- All three live sample rankings returned 12 candidates and ONNX provenance. Compiled signup route/JavaScript served successfully.
+- Account tests cover duplicate/invalid signup, password hashing, expiry, ownership across direct/nested resource APIs, private dashboard totals, read-only samples, origin rejection and idempotent seed counts.
+- Interactive visual browser QA remains unavailable; component/HTTP checks do not claim screenshot or viewport verification.
+
+See [complete project documentation](../PROJECT_DOCUMENTATION.md) for current architecture, setup, scoring, API, deployment and limitations.
+
+## Historical preparation and development records
+
 ## GitHub deployment preparation — 18 November 2026
 
 - Local backend: **45 passed** with both real models and hosted SPA/API boundary tests.

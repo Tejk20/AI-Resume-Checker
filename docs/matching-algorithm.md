@@ -1,5 +1,7 @@
 # Reproducing the matching algorithm
 
+The live Render deployment uses the official quantized ONNX MPNet export; the normal local runtime uses Sentence Transformers/PyTorch. Both use the section-aware aggregation and weights documented here. Quantization can change similarities slightly, and each result records backend, precision and model revision. See [the complete guide](../PROJECT_DOCUMENTATION.md#24-memory-optimization-and-onnx-deployment) for hosting-specific inference details.
+
 Algorithm version: `2.0.0-section-aware`. The persisted explanation stores components, normalized weights, full-precision contributions, matched/missing lists, relevant roles, semantic evidence and uncertainty warnings. Scores are heuristic measurements of JD alignment. They are neither selection decisions nor probabilities.
 
 ## 1. Normalize explicit skills

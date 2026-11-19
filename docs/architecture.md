@@ -1,5 +1,7 @@
 # Architecture
 
+For a complete current walkthrough, see [PROJECT_DOCUMENTATION.md](../PROJECT_DOCUMENTATION.md). The live deployment adds database-backed recruiter sessions and job ownership, public read-only sample jobs, and an ONNX MPNet runtime in the smaller Render image. The normal local image retains the PyTorch runtime. Nine application tables now include `users` and `auth_sessions`; owned jobs and all nested reads/writes enforce visibility rules, while `AUTH_REQUIRED=true` is enabled for hosted writes.
+
 The application is a modular monolith. React manages job context and UI state; Axios is the only HTTP client. FastAPI validates UUIDs, payload sizes, pagination and state conflicts. SQLAlchemy persists jobs, batches, candidates, file metadata and one versioned match per job/candidate pair. Alembic owns schema creation, never a startup `create_all`.
 
 ```mermaid
