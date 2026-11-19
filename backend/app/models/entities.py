@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import String, Text, Float, Integer, DateTime, ForeignKey, UniqueConstraint, CheckConstraint, JSON, Uuid
+from sqlalchemy import String, Text, Float, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint, CheckConstraint, JSON, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
@@ -20,6 +20,8 @@ class Identity:
 class Job(Identity, Base):
     __tablename__ = 'jobs'
     title: Mapped[str] = mapped_column(String(200))
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('users.id'), index=True)
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false')
     raw_text: Mapped[str] = mapped_column(Text)
     required_skills: Mapped[list] = mapped_column(J, default=list)
     preferred_skills: Mapped[list] = mapped_column(J, default=list)
@@ -120,3 +122,17 @@ class MatchResultHistory(Identity, Base):
     embedding_model: Mapped[str] = mapped_column(String(255))
     scoring_config: Mapped[dict] = mapped_column(J)
     payload: Mapped[dict] = mapped_column(J)
+
+
+class User(Identity, Base):
+    __tablename__ = 'users'
+    name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+
+
+class AuthSession(Identity, Base):
+    __tablename__ = 'auth_sessions'
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

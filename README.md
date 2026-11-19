@@ -6,6 +6,9 @@ The problem: keyword counts alone miss similar experience and conceal why candid
 
 ## Features
 
+- Recruiter signup, login and logout with hashed passwords, expiring browser sessions and account-owned jobs. Hosted write access requires login; sample jobs remain publicly readable and cannot be modified.
+- An idempotent sample workspace with three roles, 36 parsed synthetic resumes and genuine matching results. Hosted startup seeds missing samples in the background without replacing recruiter data.
+
 - Six responsive React views: overview, create/review job, bulk uploads, filtered rankings, candidate analysis, About the application.
 - PDF and DOCX parsing, 1–50 documents per batch, 10 MB default per file, partial failures and progress polling.
 - Phrase-aware skill taxonomy with aliases and related skills; related skills receive no exact-match credit.
@@ -200,7 +203,7 @@ The local UI can be captured after running the demo. Any screenshots generated d
 
 ## Limitations and security
 
-- Local evaluation prototype: no authentication, tenant isolation, retention policy or user authorization. **Use synthetic data only.** Bind servers to loopback. Real deployment requires access controls, TLS, deletion/retention processes and audit logging.
+- Hosted accounts use PBKDF2-SHA256 password hashes (600,000 iterations), random server-side sessions, HttpOnly/Secure/SameSite cookies and job ownership checks across jobs, resumes, batches, rankings, history and dashboard totals. `AUTH_REQUIRED=true` enables mandatory signup/login for writes; local compatibility mode defaults to false. `SEED_DEMO_DATA=true` creates only the fictional read-only workspace. Email verification, password recovery, retention/deletion processes and production audit logging are not implemented. **Use synthetic data for this demonstration.**
 - Rule-based extraction is conservative and English-focused. Ambiguous names return null. Dates need recognizable ranges in an employment section. Employer extraction is best-effort; unfamiliar layouts require review. Scanned PDFs need external OCR and fail clearly.
 - Experience relevance is a skill-evidence rule, not an LLM judgment or proof of proficiency. It excludes internships and projects and merges overlapping month intervals. Year-only dates are approximate. Claims and negated skills are not fully understood.
 - Qualification matching uses degree level and a limited subject check. Certification equivalence and nuanced alternative requirements are not automatically proven and may receive 50 with review. Education is never prestige-weighted.
@@ -210,7 +213,7 @@ The local UI can be captured after running the demo. Any screenshots generated d
 - Duplicate hashes prevent reprocessing the same file within a job. A reformatted copy may evade hash detection. Sequential processing is intentionally conservative.
 - Dashboard evaluation count refers to saved **job/candidate pairs**, not globally deduplicated people. Resume count refers to successfully parsed records. Upload/match status is durable, while the task queue is in memory.
 
-Future improvements: recruiter authentication, reviewed candidate field correction, stronger certification/subject extraction, OCR, durable task queue, upload request idempotency keys, retention/deletion workflows, calibrated relevance benchmarking, and fairness audits with representative consented data.
+Future improvements: email verification and account recovery, reviewed candidate field correction, stronger certification/subject extraction, OCR, durable task queue, upload request idempotency keys, retention/deletion workflows, calibrated relevance benchmarking, and fairness audits with representative consented data.
 
 ## Demo and interview preparation
 

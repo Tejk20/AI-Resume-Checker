@@ -4,6 +4,7 @@ export const api = axios.create({
     import.meta.env.VITE_API_URL ||
     (import.meta.env.PROD ? "/api/v1" : "http://127.0.0.1:8000/api/v1"),
   timeout: 60000,
+  withCredentials: true,
 });
 export function errorMessage(error) {
   const detail = error.response?.data?.detail;

@@ -21,6 +21,14 @@ The model revision and weight checksum are pinned in `scripts/download_onnx_mode
 
 Render's Free service sleeps after idle periods and wakes on a request; it is not always-on hosting. CPU is limited, so matching can take longer than in Codespaces. Free-plan quotas apply at both providers. Without payment details, do not upgrade plans to remove these limits.
 
-Neon stores extracted candidate text, job descriptions, match evidence and results across app restarts, within its free storage/compute allowance. Uploaded original PDF/DOCX files are on Render's ephemeral filesystem and are lost on restart/redeploy; the current app exposes no original-file download feature and matching uses the saved extracted records. Durable original-file retention needs external object storage. Synthetic demonstrations only: the current app has no recruiter authentication or access isolation.
+Neon stores extracted candidate text, job descriptions, match evidence and results across app restarts, within its free storage/compute allowance. Uploaded original PDF/DOCX files are on Render's ephemeral filesystem and are lost on restart/redeploy; the current app exposes no original-file download feature and matching uses the saved extracted records. Durable original-file retention needs external object storage.
+
+## Accounts and populated sample workspace
+
+The hosted image enables `AUTH_REQUIRED=true`, `SECURE_COOKIES=true` and `SEED_DEMO_DATA=true`. The Blueprint records the same values. `/signup` and `/login` create/use real database-backed accounts. Sessions expire after seven days and logout revokes the session. No tokens are kept in browser local storage. Account-owned jobs and their batches, candidates, matching runs and dashboard totals are scoped to that account. Email verification and password recovery are not yet available.
+
+On startup the app creates three deterministic sample jobs and parses the 12 supplied fictional resumes under each, then computes genuine MPNet scores through the existing worker. The 36 candidate evaluations are visible without login, clearly labeled as sample data and read-only, and remain visible alongside each recruiter's own jobs. Repeated starts skip already evaluated sample jobs. Existing jobs/results are not overwritten or assigned to a newly created account; pre-account unowned records remain stored but are hidden in hosted account mode. The seeded overview refreshes while initialization is in progress.
+
+These changes still support synthetic demonstrations only; document retention, email verification, account recovery and production operational controls need further work before handling real candidate records.
 
 References: [Render free limits](https://render.com/docs/free), [Render first deploy](https://render.com/docs/your-first-deploy), [Neon pricing](https://neon.com/pricing), [official MPNet ONNX weights](https://huggingface.co/sentence-transformers/all-mpnet-base-v2/tree/main/onnx), [Sentence Transformers ONNX pooling guidance](https://sbert.net/docs/sentence_transformer/usage/efficiency.html).

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     scoring_weights: dict[str, float] = Field(default_factory=lambda: {'semantic': .25, 'skill': .40, 'experience': .25, 'education': .10})
     model_cache: str = '../.model-cache'
     frontend_dist: Path | None = None
+    auth_required: bool = False
+    secure_cookies: bool = False
+    public_origin: str = ''
+    seed_demo_data: bool = False
 
     @field_validator('scoring_weights')
     @classmethod

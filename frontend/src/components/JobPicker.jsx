@@ -168,7 +168,7 @@ export default function JobPicker({ jobs, selected, onChange }) {
                       {option.title}
                       <small>
                         {option.type === "saved"
-                          ? `${option.group.jobs.length} saved description${option.group.jobs.length === 1 ? "" : "s"}`
+                          ? `${option.group.jobs.length} saved description${option.group.jobs.length === 1 ? "" : "s"}${option.group.jobs.every(j => j.is_demo) ? ' · Sample' : ''}`
                           : "Add a job description to activate this role"}
                       </small>
                     </span>

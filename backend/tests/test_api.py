@@ -117,3 +117,101 @@ def test_rematching_provenance_history_and_atomic_failure(client,monkeypatch):
     client.patch(endpoint,json={'required_skills':['Python']})
     assert client.get(endpoint+'/rankings').json()['total']==0
     assert len(client.get(endpoint+'/matches/'+result['candidate_id']+'/history').json())==2
+
+
+def signup_account(client, label='recruiter'):
+    response=client.post('/api/v1/auth/signup',json={'name':'Test Recruiter',
+        'email':f'{label}-{uuid4().hex}@example.test','password':'Fictional-Test-Passphrase-42'})
+    assert response.status_code==201,response.text
+    assert 'password' not in response.text
+    assert 'httponly' in response.headers['set-cookie'].lower()
+    return response.json()['user']
+
+
+def test_signup_login_logout_expiry_and_password_storage(client,monkeypatch):
+    from datetime import timedelta
+    from sqlalchemy import select
+    from app.models import User, AuthSession
+    from app.models.entities import now
+    monkeypatch.setattr(settings,'auth_required',True)
+    account=signup_account(client)
+    assert client.get('/api/v1/auth/me').json()['user']['id']==account['id']
+    with workers.SessionLocal() as db:
+        stored=db.scalar(select(User).where(User.email==account['email']))
+        assert stored.password_hash.startswith('pbkdf2_sha256$600000$')
+        assert 'Fictional-Test-Passphrase' not in stored.password_hash
+    assert client.post('/api/v1/auth/signup',json={'name':'Other Name','email':account['email'].upper(),
+        'password':'Different-Passphrase-42'}).status_code==409
+    assert client.post('/api/v1/auth/logout').status_code==204
+    assert client.get('/api/v1/auth/me').json()['user'] is None
+    credentials={'email':account['email'],'password':'Incorrect-Passphrase-42'}
+    assert client.post('/api/v1/auth/login',json=credentials).status_code==401
+    credentials['password']='Fictional-Test-Passphrase-42'
+    assert client.post('/api/v1/auth/login',json=credentials).status_code==200
+    with workers.SessionLocal() as db:
+        for session in db.scalars(select(AuthSession)):
+            session.expires_at=now()-timedelta(seconds=1)
+        db.commit()
+    assert client.get('/api/v1/auth/me').json()['user'] is None
+
+
+def test_account_isolation_covers_jobs_batches_candidates_and_dashboard(client,monkeypatch):
+    monkeypatch.setattr(settings,'auth_required',True)
+    assert client.post('/api/v1/jobs',json={'title':'Private job','raw_text':'Build reliable Python backend services.'}).status_code==401
+    signup_account(client,'first')
+    job=create(client); endpoint='/api/v1/jobs/'+job['id']
+    path=next((Path(__file__).resolve().parents[2]/'sample_data/synthetic_resumes').glob('*.pdf'))
+    batch=client.post(endpoint+'/resumes',files=[('files',(path.name,path.read_bytes()))]).json()
+    cid=client.get(endpoint+'/candidates').json()['items'][0]['id']
+    assert client.get('/api/v1/dashboard').json()['total_resumes']==1
+    assert client.post('/api/v1/auth/logout').status_code==204
+    signup_account(client,'second')
+    assert client.get('/api/v1/jobs').json()['total']==0
+    assert client.get('/api/v1/dashboard').json()['total_resumes']==0
+    for route in [endpoint,endpoint+'/candidates',endpoint+'/rankings',endpoint+'/runs',
+                  endpoint+'/matches/'+cid,endpoint+'/matches/'+cid+'/history',
+                  '/api/v1/candidates/'+cid,'/api/v1/batches/'+batch['id']]:
+        assert client.get(route).status_code==404,route
+    assert client.patch(endpoint,json={'required_skills':['SQL']}).status_code==404
+    assert client.post(endpoint+'/match').status_code==404
+    assert client.post(endpoint+'/resumes',files=[('files',(path.name,path.read_bytes()))]).status_code==404
+
+
+def test_public_sample_is_readable_but_not_editable_and_cross_site_auth_is_blocked(client,monkeypatch):
+    from app.models import Job
+    monkeypatch.setattr(settings,'auth_required',True)
+    with workers.SessionLocal() as db:
+        job=Job(title='Fictional Sample Role',raw_text='Build Python systems with relevant experience.',is_demo=True)
+        db.add(job); db.commit(); jid=str(job.id)
+    endpoint='/api/v1/jobs/'+jid
+    assert client.get('/api/v1/jobs').json()['items'][0]['is_demo'] is True
+    assert client.get(endpoint).status_code==200
+    assert client.get(endpoint+'/rankings').status_code==200
+    signup_account(client)
+    assert client.patch(endpoint,json={'required_skills':['SQL']}).status_code==403
+    assert client.post(endpoint+'/match').status_code==403
+    assert client.post('/api/v1/auth/logout',headers={'Origin':'https://unrelated.example'}).status_code==403
+    assert client.get('/api/v1/auth/me').json()['user'] is not None
+    assert client.post('/api/v1/auth/signup',json={'name':'Test User','email':'invalid','password':'short'}).status_code==422
+
+
+def test_demo_seed_is_idempotent_and_produces_scored_records(client,monkeypatch):
+    from app.services import demo
+    from sqlalchemy import select, func
+    from app.models import Job, Candidate, MatchResult
+    class Evaluation:
+        model_id='test-only-model'
+        metadata={'embedding_dimensions':768}
+        def __init__(self,job):pass
+        def prepare_many(self,candidates):return [None]*len(candidates)
+        def compare_prepared(self,item):return 80,[{'requirement':'Build systems','evidence':'Built systems','similarity':80}]
+    monkeypatch.setattr(workers,'SemanticEvaluation',Evaluation)
+    monkeypatch.setattr(demo,'SessionLocal',workers.SessionLocal)
+    demo.seed_demo(); demo.seed_demo()
+    with workers.SessionLocal() as db:
+        assert db.scalar(select(func.count()).select_from(Job))==3
+        assert db.scalar(select(func.count()).select_from(Candidate))==36
+        assert db.scalar(select(func.count()).select_from(MatchResult))==36
+    stats=client.get('/api/v1/dashboard').json()
+    assert stats['total_jobs']==3 and stats['total_evaluated']==36
+    assert stats['average_score']>0 and sum(b['count'] for b in stats['distribution'])==36

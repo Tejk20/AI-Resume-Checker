@@ -42,6 +42,7 @@ class ORM(BaseModel):
 class JobOut(ORM):
     id: UUID
     title: str
+    is_demo: bool = False
     raw_text: str
     required_skills: list[str]
     preferred_skills: list[str]

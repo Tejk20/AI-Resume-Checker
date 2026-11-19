@@ -27,6 +27,7 @@ export default function UploadResumes({
     [matchStatus, setMatchStatus] = useState(""),
     [count, setCount] = useState(0);
   const input = useRef();
+  const sampleJob = jobs.find(job => job.id === selected)?.is_demo;
   useEffect(() => {
     setFiles([]);
     setBatch(null);
@@ -157,6 +158,7 @@ export default function UploadResumes({
         failure won’t stop the batch.
       </Heading>
       <JobSelect {...{ jobs, selected, onChange: setSelected }} />
+      {sampleJob && <div className="notice">This sample job is read-only. <Link className="text-link" to="/jobs/new">Create your own job</Link> to upload resumes and run matching.</div>}
       {!jobs.length && (
         <div className="notice">
           Create a job first.{" "}
@@ -244,7 +246,7 @@ export default function UploadResumes({
           )}
           <button
             className="primary full"
-            disabled={!selected || !files.length || processing}
+            disabled={sampleJob || !selected || !files.length || processing}
             onClick={upload}
           >
             <UploadCloud size={17} />
@@ -301,7 +303,7 @@ export default function UploadResumes({
             </p>
             <button
               className="primary full"
-              disabled={!selected || !count || processing}
+              disabled={sampleJob || !selected || !count || processing}
               onClick={run}
             >
               {matching ? (

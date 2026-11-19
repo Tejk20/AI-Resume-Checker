@@ -219,7 +219,7 @@ export default function CreateJob({ refreshJobs, setSelected, jobs = [] }) {
           </div>
           {job ? (
             <>
-              <div className="notice">{job.extraction_warnings.join(" ")}</div>
+              <div className="notice">{job.is_demo ? 'Sample job: read-only requirements. Create a new job to customize your search.' : job.extraction_warnings.join(" ")}</div>
               {[
                 [
                   "required_skills",
@@ -255,6 +255,7 @@ export default function CreateJob({ refreshJobs, setSelected, jobs = [] }) {
                       min="0"
                       max="60"
                       step="0.5"
+                      disabled={job.is_demo}
                       value={edit[key]}
                       onChange={(e) =>
                         setEdit({ ...edit, [key]: e.target.value })
@@ -263,6 +264,7 @@ export default function CreateJob({ refreshJobs, setSelected, jobs = [] }) {
                   ) : (
                     <textarea
                       rows={key.includes("skills") ? 2 : 3}
+                      disabled={job.is_demo}
                       value={edit[key]}
                       onChange={(e) =>
                         setEdit({ ...edit, [key]: e.target.value })
@@ -272,7 +274,7 @@ export default function CreateJob({ refreshJobs, setSelected, jobs = [] }) {
                   <small className="muted">{help}</small>
                 </label>
               ))}
-              <button className="primary full" onClick={save} disabled={busy}>
+              <button className="primary full" onClick={save} disabled={busy || job.is_demo}>
                 <Save size={17} />
                 {busy ? "Saving…" : "Save requirements & continue"}
                 <ArrowRight size={17} />

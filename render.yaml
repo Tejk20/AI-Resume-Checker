@@ -14,3 +14,11 @@ services:
         sync: false
       - key: CORS_ORIGINS
         value: '[]'
+      - key: AUTH_REQUIRED
+        value: 'true'
+      - key: SECURE_COOKIES
+        value: 'true'
+      - key: PUBLIC_ORIGIN
+        value: https://avom-resume-checker.onrender.com
+      - key: SEED_DEMO_DATA
+        value: 'true'

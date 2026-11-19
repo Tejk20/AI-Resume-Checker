@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect } from 'react';
 import {
   BriefcaseBusiness,
   Files,
@@ -29,6 +30,11 @@ export default function Dashboard({ setSelected }) {
     return { stats: stats.data, jobs: jobs.data.items };
   });
   const stats = data?.stats;
+  useEffect(() => {
+    if (!stats?.demo_loading) return;
+    const timer = setTimeout(reload, 4000);
+    return () => clearTimeout(timer);
+  }, [stats?.demo_loading, data, reload]);
   return (
     <>
       <Heading
@@ -43,6 +49,8 @@ export default function Dashboard({ setSelected }) {
       >
         Turn resumes into evidence. Find the experience that fits.
       </Heading>
+      {stats?.demo_jobs > 0 && <div className="demo-banner"><span className="pill">SAMPLE WORKSPACE</span><p>Explore fictional candidates across three hiring roles. Sample jobs are read-only; your own jobs stay in your account.</p><Link to="/rankings" className="text-link">Explore candidates <ArrowRight size={16} /></Link></div>}
+      {stats?.demo_loading && <div className="notice">Preparing your sample candidates and matching results. This page will refresh automatically.</div>}
       <State {...{ loading, error }} retry={reload}>
         {data && (
           <>
