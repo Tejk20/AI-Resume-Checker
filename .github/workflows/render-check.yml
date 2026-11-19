@@ -1,0 +1,44 @@
+name: Free host memory checks
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile.render
+      - render.yaml
+      - compose.render-test.yml
+      - backend/**
+      - frontend/**
+      - scripts/**
+      - .github/workflows/render-check.yml
+permissions:
+  contents: read
+jobs:
+  constrained-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the quantized MPNet app and cap it at 512 MiB
+        run: docker compose -f compose.hosted.yml -f compose.render-test.yml up -d --build --wait --wait-timeout 180
+      - name: Verify same-origin frontend and real API
+        run: docker compose -f compose.hosted.yml -f compose.render-test.yml exec -T app python scripts/check_hosted_http.py
+      - name: Run all 36 real resume evaluations under the memory limit
+        # Run the test client outside the constrained app container.
+        run: |
+          python -m pip install httpx
+          python scripts/verify_workflow.py
+      - name: Confirm no PyTorch dependency or container restart
+        run: |
+          docker compose -f compose.hosted.yml -f compose.render-test.yml exec -T app python -c "import importlib.util; assert importlib.util.find_spec('torch') is None"
+          CONTAINER_ID=$(docker compose -f compose.hosted.yml -f compose.render-test.yml ps -q app)
+          docker inspect --format '{{json .State}}' "$CONTAINER_ID"
+          test "$(docker inspect --format '{{.RestartCount}}' "$CONTAINER_ID")" = 0
+          test "$(docker inspect --format '{{.State.OOMKilled}}' "$CONTAINER_ID")" = false
+          docker stats --no-stream
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose -f compose.hosted.yml -f compose.render-test.yml logs --tail=100
+      - name: Stop test services
+        if: always()
+        run: docker compose -f compose.hosted.yml -f compose.render-test.yml down

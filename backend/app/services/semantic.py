@@ -27,7 +27,12 @@ class SemanticError(RuntimeError):
 
 
 @lru_cache(maxsize=1)
-def _load_model(identifier, cache_folder):
+def _load_model(identifier, cache_folder, backend='pytorch', onnx_dir=''):
+    if backend == 'onnx-int8':
+        if identifier != MPNET:
+            raise ValueError('The quantized deployment supports MPNet only.')
+        from app.services.onnx_embeddings import OnnxMPNet
+        return OnnxMPNet(onnx_dir)
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer(identifier, cache_folder=cache_folder, device='cpu',
                                trust_remote_code=False)
@@ -37,7 +42,8 @@ def get_model(identifier=None):
     # Lock outside lru_cache prevents concurrent cache misses loading twice.
     with MODEL_LOCK:
         try:
-            return _load_model(identifier or settings.embedding_model, str(settings.model_cache))
+            return _load_model(identifier or settings.embedding_model, str(settings.model_cache),
+                               settings.embedding_backend, str(settings.onnx_model_dir))
         except Exception as exc:
             raise SemanticError('Embedding model could not be loaded. Download the configured model or explicitly select the MiniLM baseline.') from exc
 
@@ -186,6 +192,8 @@ class SemanticEvaluation:
             'section_weights': GROUP_WEIGHTS,
             'aggregation': 'mean best positive cosine per requirement within section; normalized weighted section mean',
             'normalized_embeddings': True,
+            'embedding_backend': settings.embedding_backend,
+            'precision': 'int8' if settings.embedding_backend == 'onnx-int8' else 'float32',
             'chunk_overlap_tokens': min(32, (int(self.model.max_seq_length)-2)//4),
         }
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 import math
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -14,6 +15,8 @@ class Settings(BaseSettings):
     embedding_model: str = Field(default='sentence-transformers/all-mpnet-base-v2', validation_alias=AliasChoices('EMBEDDING_MODEL', 'MODEL_NAME'))
     embedding_cache_mb: int = Field(default=128, ge=0, le=2048)
     embedding_batch_size: int = Field(default=32, ge=1, le=128)
+    embedding_backend: Literal['pytorch', 'onnx-int8'] = 'pytorch'
+    onnx_model_dir: Path = Path('../.model-cache/onnx-mpnet')
     scoring_weights: dict[str, float] = Field(default_factory=lambda: {'semantic': .25, 'skill': .40, 'experience': .25, 'education': .10})
     model_cache: str = '../.model-cache'
     frontend_dist: Path | None = None

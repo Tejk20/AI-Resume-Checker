@@ -1,5 +1,7 @@
 # GitHub-based demo deployment
 
+For a GitHub-connected external host without a card, see [Render + Neon](render-deployment.md). That configuration uses a separately tested quantized MPNet runtime for the 512 MiB service limit. The original PyTorch deployment below remains available for Codespaces and larger hosts.
+
 This is a complete React + FastAPI + PostgreSQL deployment, with the existing CPU MPNet engine. GitHub Pages alone cannot run Python/PostgreSQL. The free 512 MB service tiers are below this application's measured MPNet memory usage. No model downgrade or paid resource is configured.
 
 ## What is prepared

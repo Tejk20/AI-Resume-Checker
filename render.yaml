@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: avom-resume-checker
+    runtime: docker
+    repo: https://github.com/Tejk20/AI-Resume-Checker
+    branch: main
+    plan: free
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: '[]'

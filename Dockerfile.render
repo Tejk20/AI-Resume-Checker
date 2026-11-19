@@ -1,0 +1,33 @@
+FROM node:22-bookworm-slim AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+ENV VITE_API_URL=/api/v1
+RUN npm run build
+
+FROM python:3.12-slim-bookworm
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
+    TOKENIZERS_PARALLELISM=false HF_HUB_DISABLE_XET=1 \
+    EMBEDDING_MODEL=sentence-transformers/all-mpnet-base-v2 \
+    EMBEDDING_BACKEND=onnx-int8 ONNX_MODEL_DIR=/app/.model-cache/onnx-mpnet \
+    EMBEDDING_BATCH_SIZE=1 EMBEDDING_CACHE_MB=4 \
+    FRONTEND_DIST=/app/frontend/dist UPLOAD_DIR=/app/storage/uploads \
+    OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PORT=8000
+WORKDIR /app
+COPY backend/requirements-render.txt ./backend/requirements-render.txt
+RUN python -m pip install -r backend/requirements-render.txt
+COPY backend/ ./backend/
+COPY scripts/ ./scripts/
+COPY sample_data/ ./sample_data/
+COPY --from=frontend /frontend/dist ./frontend/dist
+RUN python scripts/download_onnx_model.py \
+    && useradd --create-home --uid 1000 appuser \
+    && mkdir -p /app/storage/uploads \
+    && chown -R appuser:appuser /app
+ENV HF_HUB_OFFLINE=1
+USER appuser
+EXPOSE 8000
+HEALTHCHECK --interval=20s --timeout=5s --start-period=90s --retries=6 \
+  CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:'+os.getenv('PORT','8000')+'/api/v1/health',timeout=4)"
+CMD ["python", "scripts/start_hosted.py"]

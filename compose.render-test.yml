@@ -1,0 +1,19 @@
+# Local/CI validation only. Public deployment uses Render + external PostgreSQL.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.render
+    mem_limit: 512m
+    memswap_limit: 512m
+    environment:
+      DATABASE_URL: postgresql+psycopg://resume:local_codespace_only@db:5432/resume_matcher
+      CORS_ORIGINS: '[]'
+    ports:
+      - '8000:8000'
+    volumes:
+      - hosted_uploads:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
