@@ -38,14 +38,15 @@ export default function PasswordRecovery({ reset = false }) {
     <span className="eyebrow">ACCOUNT RECOVERY</span>
     <h2>{message ? reset ? 'Password updated.' : 'Check your inbox.' : reset ? 'Choose a new password.' : 'Forgot your password?'}</h2>
     {message ? <div role="status" className="recovery-success"><CheckCircle2 size={32} /><p>{message}</p>
-      <Link to={reset ? '/login' : '/forgot-password'} onClick={() => setMessage('')} className="primary full">{reset ? 'Sign in' : 'Try another email'}<ArrowRight size={17} /></Link></div>
+      <Link to="/login" className="primary full">Sign in<ArrowRight size={17} /></Link>
+      {!reset && <button type="button" className="text-link" onClick={() => setMessage('')}>Try another email</button>}</div>
       : reset && !token ? <><div role="alert" className="notice danger">Open the reset link from your email, or request a new link.</div><Link to="/forgot-password" className="primary full">Request a new link</Link></>
-      : <><p className="muted">{reset ? 'Use a password you have not used elsewhere. You will need to sign in again on your devices.' : 'Enter your account email to request a secure, single-use reset link.'}</p>
+      : <><p className="muted">{reset ? 'Use a password you have not used elsewhere. You will need to sign in again on your devices.' : 'Enter your registered email to receive a temporary password. Sign in within 30 minutes, then keep using it or update it in Profile settings.'}</p>
       <form onSubmit={submit}>
         {!reset ? <label>Email address<input type="email" autoComplete="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" /></label>
           : <><label htmlFor="reset-password">New password</label><div className="password-control"><input id="reset-password" type={show ? 'text' : 'password'} autoComplete="new-password" required minLength={10} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} aria-describedby="reset-help" /><button type="button" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)}>{show ? <EyeOff size={18} /> : <Eye size={18} />}</button></div><small id="reset-help" className="muted">At least 10 characters.</small><label>Confirm new password<input type={show ? 'text' : 'password'} autoComplete="new-password" required minLength={10} maxLength={128} value={confirm} onChange={e => setConfirm(e.target.value)} /></label></>}
         {error && <div role="alert" className="notice danger">{error}</div>}
-        <button type="submit" disabled={busy} className="primary full">{busy ? 'Please wait…' : reset ? 'Update password' : 'Send reset link'}{!reset ? <Mail size={17} /> : <ArrowRight size={17} />}</button>
+        <button type="submit" disabled={busy} className="primary full">{busy ? 'Please wait…' : reset ? 'Update password' : 'Send temporary password'}{!reset ? <Mail size={17} /> : <ArrowRight size={17} />}</button>
       </form></>}
   </div></AuthLayout>;
 }

@@ -9,11 +9,11 @@ vi.mock('../components/AuthContext', () => ({ useAuth: () => ({ setUser }) }));
 vi.mock('../services/api', () => ({ api: { post: vi.fn() }, errorMessage: error => error.message }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-it('requests a link without showing a password or reset token', async () => {
-  api.post.mockResolvedValue({ data: { message: 'If an account matches, a reset link will be sent.' } });
+it('requests a temporary password without exposing it in the page', async () => {
+  api.post.mockResolvedValue({ data: { message: 'If an account matches, a temporary password will be sent.' } });
   render(<MemoryRouter><PasswordRecovery /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'test@example.test' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Send temporary password' }));
   expect(await screen.findByRole('status')).toHaveTextContent('If an account matches');
   expect(api.post).toHaveBeenCalledWith('/auth/forgot-password', { email: 'test@example.test' });
 });
@@ -22,7 +22,7 @@ it('clearly reports unconfigured delivery instead of claiming success', async ()
   api.post.mockRejectedValue(new Error('Password-reset email is not configured yet.'));
   render(<MemoryRouter><PasswordRecovery /></MemoryRouter>);
   fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'test@example.test' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Send temporary password' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('not configured');
   expect(screen.queryByRole('heading', { name: 'Check your inbox.' })).not.toBeInTheDocument();
 });

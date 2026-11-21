@@ -1,7 +1,6 @@
-"""Password recovery delivery through an HTTPS transactional email API.
+"""Recovery delivery through HTTPS; plaintext credentials never enter DB or logs.
 
-Raw tokens appear only in the recipient's link, never in API responses, logs,
-database rows, or URL query strings sent to the application server.
+Legacy links remain supported; new requests email a random temporary password.
 """
 from datetime import timedelta
 import hashlib
@@ -15,7 +14,7 @@ from app.models import PasswordResetToken
 from app.models.entities import now
 
 RESET_MINUTES = 30
-RESET_MESSAGE = 'If an account matches that email, a password-reset link will be sent. Please check your inbox and spam folder.'
+RESET_MESSAGE = 'If an account matches that email, a temporary password will be sent. Please check your inbox and spam folder.'
 
 
 def reset_origin():
@@ -34,7 +33,7 @@ def delivery_available():
                 and settings.password_reset_sender and reset_origin())
 
 
-def issue_token(db, user):
+def issue_token(db, user, temporary_password_hash=None):
     from sqlalchemy import delete
     # Only the latest requested link remains valid for this account.
     db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
@@ -42,22 +41,33 @@ def issue_token(db, user):
     token = secrets.token_urlsafe(32)
     db.add(PasswordResetToken(user_id=user.id,
         token_hash=hashlib.sha256(token.encode()).hexdigest(),
-        expires_at=now()+timedelta(minutes=RESET_MINUTES)))
+        expires_at=now()+timedelta(minutes=RESET_MINUTES),
+        temporary_password_hash=temporary_password_hash))
     db.commit()
     # Fragments are not transmitted in HTTP requests or referrer headers.
     return reset_origin() + '/reset-password#token=' + token
 
 
-def deliver_reset_email(recipient, reset_url):
+def issue_temporary_password(db, user):
+    from app.services.auth import hash_password
+    password = secrets.token_urlsafe(18)
+    issue_token(db, user, hash_password(password))
+    return password
+
+
+def deliver_reset_email(recipient, temporary_password):
     try:
         response = httpx.post('https://api.brevo.com/v3/smtp/email',
             headers={'api-key': settings.brevo_api_key.get_secret_value()},
             json={'sender': {'name': 'HireLens AI', 'email': settings.password_reset_sender},
                   'to': [{'email': recipient}],
-                  'subject': 'Reset your HireLens AI password',
-                  'textContent': 'A password reset was requested for your HireLens AI account.\n\n'
-                      + reset_url + f'\n\nThis link expires in {RESET_MINUTES} minutes and can be used once. '
-                      'If you did not request this, you can ignore this email.'}, timeout=15)
+                  'subject': 'Your HireLens AI temporary password',
+                  'textContent': 'A temporary password was requested for your HireLens AI account.\n\n'
+                      + 'Temporary password: ' + temporary_password
+                      + '\n\nSign in at ' + reset_origin() + '/login'
+                      + f'\nUse this password within {RESET_MINUTES} minutes. On first sign-in it replaces your old password. '
+                      'You can keep using it or change it in Profile settings. '
+                      'If you did not request this, ignore this email; your existing password still works.'}, timeout=15)
         response.raise_for_status()
     except Exception as exc:
         # Provider error bodies/URLs may contain sensitive values; do not log them.

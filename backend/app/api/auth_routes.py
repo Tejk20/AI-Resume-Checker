@@ -38,6 +38,11 @@ class ResetPassword(BaseModel):
     password: str = Field(min_length=10, max_length=128)
 
 
+class ChangePassword(BaseModel):
+    current_password: str = Field(min_length=10, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
 class Signup(Credentials):
     name: str = Field(min_length=2, max_length=100)
 
@@ -72,6 +77,24 @@ def login(payload: Credentials, request: Request, response: Response, db: DB):
     # Run the same expensive hash path even for unknown accounts.
     stored = user.password_hash if user else 'pbkdf2_sha256$600000$'+'0'*32+'$'+'0'*64
     valid = verify_password(payload.password, stored)
+    pending = db.scalar(select(PasswordResetToken).where(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.consumed_at.is_(None),
+        PasswordResetToken.expires_at > now(),
+        PasswordResetToken.temporary_password_hash.is_not(None)
+    ).order_by(PasswordResetToken.created_at.desc())) if user and not valid else None
+    if pending and verify_password(payload.password, pending.temporary_password_hash):
+        claimed = db.scalar(update(PasswordResetToken).where(
+            PasswordResetToken.id == pending.id,
+            PasswordResetToken.consumed_at.is_(None),
+            PasswordResetToken.expires_at > now()
+        ).values(consumed_at=now()).returning(PasswordResetToken.user_id)
+          .execution_options(synchronize_session='fetch'))
+        if claimed:
+            user.password_hash = pending.temporary_password_hash
+            db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
+            db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
+            valid = True
     if not user or not valid:
         raise HTTPException(401, 'Email or password is incorrect.')
     create_session(db, user, response)
@@ -92,9 +115,27 @@ def forgot_password(payload: EmailRequest, request: Request, tasks: BackgroundTa
         raise HTTPException(503, 'Password-reset email is not configured yet. Please contact the app administrator.')
     user = db.scalar(select(User).where(User.email == payload.email))
     if user:
-        link = password_reset.issue_token(db, user)
-        tasks.add_task(password_reset.deliver_reset_email, user.email, link)
+        temporary = password_reset.issue_temporary_password(db, user)
+        tasks.add_task(password_reset.deliver_reset_email, user.email, temporary)
     return {'message': password_reset.RESET_MESSAGE}
+
+
+@router.post('/change-password')
+def change_password(payload: ChangePassword, request: Request, response: Response, db: DB,
+                    user=Depends(current_user)):
+    if not user:
+        raise HTTPException(401, 'Sign in to update your password.')
+    throttle(request, 'change:'+user.email)
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(400, 'Your current password is incorrect.')
+    if payload.current_password == payload.new_password:
+        raise HTTPException(400, 'Choose a different new password.')
+    user.password_hash = hash_password(payload.new_password)
+    db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
+    db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
+    create_session(db, user, response)
+    response.headers['Cache-Control'] = 'no-store'
+    return {'message': 'Password updated. Other devices have been signed out.'}
 
 
 @router.post('/reset-password')

@@ -1399,3 +1399,6 @@ These are future improvements, not features to claim in a demo or interview as a
 - [GitHub Codespaces lifecycle](https://docs.github.com/en/codespaces/about-codespaces/understanding-the-codespace-lifecycle)
 
 This is the source-based documentation snapshot for the verified application on 19 November 2026. Future code, model, schema or hosting changes should update the relevant sections and verification evidence.
+# Recovery flow update — 21 November 2026
+
+The current forgot-password flow emails a temporary password rather than a reset link. It must be used within 30 minutes. First sign-in makes it the account password, which can be kept or changed at `/profile`. The previous password stays valid until that first sign-in. `POST /api/v1/auth/change-password` verifies the current password, changes it, clears pending recovery, revokes other sessions and rotates the current session. Migration `f53cd41902e8` adds a nullable temporary-password hash to recovery records. Older link-based reset descriptions document compatibility behavior; new emails follow this flow. See [password recovery](docs/password-recovery.md) for configuration and details.

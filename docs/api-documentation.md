@@ -11,7 +11,8 @@ Hosted writes require an authenticated `avom_session` cookie. Private jobs and n
 | POST | `/auth/login` | `{email,password}`; 200 user summary and session cookie |
 | GET | `/auth/me` | `{user,auth_required}`; user is null without a valid session |
 | POST | `/auth/logout` | 204; revoke session and clear cookie |
-| POST | `/auth/forgot-password` | `{email}`; generic 202; 503 if sender/key is not configured |
+| POST | `/auth/forgot-password` | `{email}`; emails a temporary password for a registered account; generic 202; 503 if sender/key is not configured |
+| POST | `/auth/change-password` | `{current_password,new_password}`; authenticated; verifies current password, revokes other sessions and rotates current session |
 | POST | `/auth/reset-password` | `{token,password}`; update password/revoke sessions; 400 for expired/used/invalid token |
 | GET | `/dashboard` | Saved jobs, parsed resumes, evaluated pairs, mean score, distribution and recent batches |
 | POST | `/jobs` | JSON `{title, raw_text}`; title 2–200 chars, text 30–100000; 201 extracted saved job |
@@ -45,3 +46,4 @@ Match status lives on the job: `idle`, `processing`, `completed`, `failed`. Poll
 Errors: 401 login required/incorrect credentials; 403 read-only sample or rejected origin; 404 missing/inaccessible resource; 422 validation or no candidates to match; 409 duplicate email or current job upload/match conflict; 429 account-attempt limit; 503 bounded worker/hash admission full; 500 generic internal failure. Do not return raw tracebacks, file paths or credentials. CORS is configured using a JSON array of permitted frontend origins.
 
 There is intentionally no upload download/static route. Original filenames are safe basenames; file paths and resume text are not exposed in summary/detail schemas. Account identity and ownership checks are implemented; email verification/recovery, retention, reverse-proxy request limits and hardened document processing remain further production work. See [the complete project guide](../PROJECT_DOCUMENTATION.md) for all configuration and account details.
+See [password recovery](password-recovery.md) for temporary-password expiry, first-use promotion, and profile settings.

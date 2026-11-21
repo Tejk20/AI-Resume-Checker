@@ -9,7 +9,7 @@ The problem: keyword counts alone miss similar experience and conceal why candid
 ## Features
 
 - Recruiter signup, login and logout with hashed passwords, expiring browser sessions and account-owned jobs. Hosted write access requires login; sample jobs remain publicly readable and cannot be modified.
-- Forgot-password and reset pages use expiring, single-use email links and revoke existing sessions after a password change. [Email delivery setup](docs/password-recovery.md) requires a verified sender and a private provider API key; delivery is inactive until configured.
+- Forgot password emails a random temporary password, valid for first sign-in within 30 minutes. First use replaces the old password; users may keep it or change it in Profile settings. Password changes revoke other sessions. [Email delivery setup](docs/password-recovery.md) requires a verified sender and private provider API key; delivery is inactive until configured.
 - An idempotent sample workspace with three roles, 36 parsed synthetic resumes and genuine matching results. Hosted startup seeds missing samples in the background without replacing recruiter data.
 - Uploading to a sample role creates a private copy of its requirements for the selected CV, so public sample data stays read-only while recruiters can evaluate their own candidates.
 

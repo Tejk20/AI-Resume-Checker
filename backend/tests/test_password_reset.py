@@ -18,6 +18,8 @@ def configured(monkeypatch):
     monkeypatch.setattr(settings, 'public_origin', 'https://hirelens.example.test')
     delivery = Mock()
     monkeypatch.setattr(password_reset, 'deliver_reset_email', delivery)
+    # Keep coverage for previously issued link-based recovery requests.
+    monkeypatch.setattr(password_reset, 'issue_temporary_password', password_reset.issue_token)
     return delivery
 
 

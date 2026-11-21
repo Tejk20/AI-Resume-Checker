@@ -10,6 +10,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ScanLine,
+  Settings,
 } from "lucide-react";
 import { api, errorMessage } from "./services/api";
 import Dashboard from "./pages/Dashboard";
@@ -23,12 +24,14 @@ import { AuthProvider, useAuth, RequireAccount } from './components/AuthContext'
 import Auth from './pages/Auth';
 import PasswordRecovery from './pages/PasswordRecovery';
 import Brand from './components/Brand';
+import Profile from './pages/Profile';
 const links = [
   ["/", "Overview", LayoutDashboard],
   ["/jobs/new", "Create job", FilePlus2],
   ["/upload", "Upload resumes", Upload],
   ["/rankings", "Candidate rankings", Users],
   ["/methodology", "About the application", BookOpen],
+  ["/profile", "Profile settings", Settings],
 ];
 function Workspace() {
   const { user, ready, required, error: authError, refresh: refreshAuth, logout } = useAuth();
@@ -151,6 +154,7 @@ function Workspace() {
             </div>
           )}
           <Routes key={user?.id || 'visitor'}>
+            <Route path="/profile" element={<RequireAccount><Profile /></RequireAccount>} />
             <Route path="/" element={<Dashboard {...context} />} />
             <Route path="/jobs/new" element={<RequireAccount><CreateJob {...context} /></RequireAccount>} />
             <Route path="/upload" element={<RequireAccount><UploadResumes {...context} /></RequireAccount>} />

@@ -144,3 +144,4 @@ class PasswordResetToken(Identity, Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    temporary_password_hash: Mapped[str | None] = mapped_column(String(255))
