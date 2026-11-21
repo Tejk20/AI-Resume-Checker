@@ -338,9 +338,9 @@ button {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 0 13px 45px;
+  padding: 0 8px 36px;
   font:
-    800 32px/1 Manrope,
+    800 22px/1 Manrope,
     sans-serif;
   letter-spacing: -1.5px;
 }

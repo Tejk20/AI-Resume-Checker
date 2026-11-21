@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Eye, EyeOff, ScanLine } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { api, errorMessage } from '../services/api';
 import { useAuth } from '../components/AuthContext';
+import AuthLayout from '../components/AuthLayout';
 
 export default function Auth({ signup = false }) {
   const { user, setUser } = useAuth();
@@ -32,18 +33,7 @@ export default function Auth({ signup = false }) {
     finally { setBusy(false); }
   }
   const update = key => event => setValues({ ...values, [key]: event.target.value });
-  return <div className="auth-page">
-    <section className="auth-story">
-      <Link to="/" className="brand"><span className="brand-icon"><ScanLine /></span><span>avom<span className="brand-dot">.</span><small>RESUME INTELLIGENCE</small></span></Link>
-      <div className="auth-story-copy">
-        <span className="eyebrow">A BETTER VIEW OF TALENT</span>
-        <h1>The right evidence.<br />A clearer shortlist.</h1>
-        <p>Bring your job requirements and candidate pool together in one thoughtful workspace.</p>
-        <ul>{['Compare skills and relevant experience', 'Understand the evidence behind every score', 'Keep your recruiting work in your own account'].map(text => <li key={text}><Check size={18} />{text}</li>)}</ul>
-      </div>
-      <p className="auth-story-footer">Built for recruiters. Decisions stay with people.</p>
-    </section>
-    <section className="auth-form-panel">
+  return <AuthLayout>
       <div className="auth-form-wrap">
         <Link to="/" className="text-link auth-back">← Explore the sample workspace</Link>
         <span className="eyebrow">YOUR RECRUITER WORKSPACE</span>
@@ -58,9 +48,9 @@ export default function Auth({ signup = false }) {
           {error && <div role="alert" className="notice danger">{error}</div>}
           <button disabled={busy} className="primary full" type="submit">{busy ? 'Please wait…' : signup ? 'Create account' : 'Sign in'}<ArrowRight size={17} /></button>
         </form>
-        <p className="auth-switch">{signup ? 'Already have an account?' : 'New to Avom?'}{' '}<Link className="text-link" to={(signup ? '/login' : '/signup') + '?next=' + encodeURIComponent(next)}>{signup ? 'Sign in' : 'Create an account'}</Link></p>
+        <p className="auth-switch"><Link className="text-link" to="/forgot-password">Forgot password?</Link></p>
+        <p className="auth-switch">{signup ? 'Already have an account?' : 'New to HireLens AI?'}{' '}<Link className="text-link" to={(signup ? '/login' : '/signup') + '?next=' + encodeURIComponent(next)}>{signup ? 'Sign in' : 'Create an account'}</Link></p>
         <p className="muted small">Explore fictional candidates in the sample workspace, then start your own search.</p>
       </div>
-    </section>
-  </div>;
+  </AuthLayout>;
 }

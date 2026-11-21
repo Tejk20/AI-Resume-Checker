@@ -24,7 +24,7 @@ async def lifespan(app):
     EXECUTOR.shutdown(wait=True)
 
 
-app=FastAPI(title='Avom • Resume Intelligence',version='1.0.0',lifespan=lifespan)
+app=FastAPI(title='HireLens AI',version='1.0.0',lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origins,allow_credentials=True,allow_methods=['GET','POST','PATCH'],allow_headers=['Content-Type'])
 app.include_router(router)
 app.include_router(auth_router)

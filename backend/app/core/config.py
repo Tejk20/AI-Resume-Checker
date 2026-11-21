@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 import math
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     secure_cookies: bool = False
     public_origin: str = ''
     seed_demo_data: bool = False
+    brevo_api_key: SecretStr | None = None
+    password_reset_sender: str = ''
 
     @field_validator('scoring_weights')
     @classmethod

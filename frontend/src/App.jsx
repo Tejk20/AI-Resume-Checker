@@ -21,6 +21,8 @@ import Methodology from "./pages/Methodology";
 import { canonicalJobTitle } from "./components/jobOptions";
 import { AuthProvider, useAuth, RequireAccount } from './components/AuthContext';
 import Auth from './pages/Auth';
+import PasswordRecovery from './pages/PasswordRecovery';
+import Brand from './components/Brand';
 const links = [
   ["/", "Overview", LayoutDashboard],
   ["/jobs/new", "Create job", FilePlus2],
@@ -76,18 +78,12 @@ function Workspace() {
   const context = { jobs, selected, setSelected, refreshJobs };
   if (location.pathname === '/signup' || location.pathname === '/login')
     return <Auth key={location.pathname} signup={location.pathname === '/signup'} />;
+  if (location.pathname === '/forgot-password' || location.pathname === '/reset-password')
+    return <PasswordRecovery key={location.pathname} reset={location.pathname === '/reset-password'} />;
   return (
     <div className="app">
       <aside className={open ? "sidebar open" : "sidebar"}>
-        <Link to="/" className="brand">
-          <span className="brand-icon">
-            <ScanLine />
-          </span>
-          <span>
-            avom<span className="brand-dot">.</span>
-            <small>RESUME INTELLIGENCE</small>
-          </span>
-        </Link>
+        <Brand />
         <p className="nav-label">WORKSPACE</p>
         <nav>
           {links.map(([to, label, Icon]) => (
@@ -175,7 +171,7 @@ function Workspace() {
           </Routes>
         </main>
         <footer>
-          AVOM CONSULTANTS{" "}
+          HIRELENS AI{" "}
           <span>
             Compatibility is a starting point. People make the decisions.
           </span>

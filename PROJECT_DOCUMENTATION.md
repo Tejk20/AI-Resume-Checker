@@ -1,4 +1,4 @@
-# Avom Resume Intelligence — Complete Project Documentation
+# HireLens AI — Complete Project Documentation
 
 **AI Resume Matching and Candidate Ranking Application**
 
@@ -13,6 +13,8 @@
 **Signup:** <https://avom-resume-checker.onrender.com/signup>
 
 This guide explains what was built, how its code works, how scores are calculated, how data moves through the system, how to run and deploy it, and what remains limited. It describes the implemented application rather than an imagined production system. Commands assume the repository root unless a different directory is stated. No real database credentials or account passwords are included.
+
+**21 November 2026 update:** The application is now named HireLens AI. Password recovery has been implemented with expiring email links; [sender configuration](docs/password-recovery.md) is required before live reset emails can be delivered. Older benchmark/test entries below retain their original verification baseline.
 
 ## Contents
 
@@ -242,7 +244,7 @@ AI-Resume-Checker/
 │   ├── requirements-render.txt
 │   ├── .env.example
 │   ├── alembic.ini
-│   ├── alembic/versions/           Three schema migrations
+│   ├── alembic/versions/           Four schema migrations
 │   ├── app/
 │   │   ├── main.py                App, middleware, startup and health
 │   │   ├── api/                   Domain and authentication routes
@@ -275,7 +277,7 @@ AI-Resume-Checker/
 | `app/main.py` | FastAPI instance, lifespan, optional demo seeding, CORS, generic error handling, database health and frontend mounting |
 | `app/core/config.py` | Environment settings, default weights, model choice and validation |
 | `app/core/database.py` | SQLAlchemy base, engine, `SessionLocal` and request database dependency |
-| `app/models/entities.py` | Nine application tables and their constraints/relationships |
+| `app/models/entities.py` | Ten application tables and their constraints/relationships |
 | `app/models/__init__.py` | Entity exports and migration discovery |
 | `app/schemas/contracts.py` | Validated job input, extracted profile output and paginated API responses |
 | `app/api/routes.py` | Jobs, files, candidates, dashboard, matching, ranking and history APIs |
@@ -420,7 +422,7 @@ Write requests with an `Origin` header must match the request origin, configured
 
 The single-process account service keeps a 15-minute attempt window, with limits of 60 attempts per source IP and ten per normalized-email hash. It returns 429 and `Retry-After: 900` when limited. Counters reset on restart and are not a distributed rate limiter. Reverse-proxy IP behavior should be reviewed before increasing real-world traffic.
 
-Email verification, forgotten-password recovery, MFA, account deletion and administrator/team roles are not implemented.
+Forgotten-password recovery uses a hashed, 30-minute single-use token delivered through a configured email provider. The token is carried in a URL fragment rather than an HTTP query string, and a successful reset revokes all account sessions. Email delivery is unavailable until a verified sender and provider key are configured. Email verification, MFA, account deletion and administrator/team roles are not implemented. See [recovery setup and security details](docs/password-recovery.md).
 
 ## 9. Job description extraction
 
@@ -658,7 +660,7 @@ Changing the model setting alone does not relabel old results. Explicit rematchi
 
 ## 16. Database design
 
-There are nine application tables, plus Alembic's version-tracking table. Application entities share a UUID primary key and creation timestamp. PostgreSQL stores flexible lists/dictionaries in JSONB; isolated SQLite tests use the JSON variant.
+There are ten application tables, plus Alembic's version-tracking table. Application entities share a UUID primary key and creation timestamp. PostgreSQL stores flexible lists/dictionaries in JSONB; isolated SQLite tests use the JSON variant.
 
 ```mermaid
 erDiagram
@@ -681,6 +683,7 @@ erDiagram
 |---|---|
 | `users` | `name`, unique/indexed normalized `email`, `password_hash` |
 | `auth_sessions` | `user_id`, unique/indexed `token_hash`, indexed `expires_at`; user FK has cascade-on-delete |
+| `password_reset_tokens` | `user_id`, unique/indexed token digest, expiry and consumption timestamps; never stores the raw email-link token |
 | `jobs` | Nullable indexed `owner_id`, `is_demo`, title, raw JD, required/preferred skills, minimum experience, qualifications, responsibilities, extraction warnings, update timestamp, match status/error |
 | `upload_batches` | Indexed `job_id`, status, total/processed/failed counts, per-file errors, completion timestamp |
 | `candidates` | Indexed `batch_id`, name, email, phone, skills/evidence, total professional years, detailed roles, education, projects, certifications, raw extracted text and warnings |
@@ -708,6 +711,7 @@ Nullable score components mean “not applicable,” not zero. Unknown candidate
 | `ac6625edd2a0` | Initial jobs, batches, candidates, file metadata and current results |
 | `b31e0a2f7d42` | Matching runs, provenance fields and result history |
 | `d28f9e2b603a` | Users, sessions, job ownership and sample-job flag |
+| `e42bc30891d7` | Single-use password-reset token storage |
 
 Startup runs `alembic upgrade head` before hosted Uvicorn starts. The application does not create production tables through `Base.metadata.create_all()`. Migrations preserve existing rows; migration commands still deserve database backups and review when handling valuable data. Database downgrades can remove added tables/columns and are not a routine rollback method.
 
@@ -757,6 +761,8 @@ JSON names use snake_case; IDs are UUIDs. Paginated resources return `{ "items":
 | POST | `/auth/login` | `{email,password}`; user summary and session cookie |
 | GET | `/auth/me` | User summary or null, plus `auth_required` |
 | POST | `/auth/logout` | Revoke current session and clear cookie; 204 |
+| POST | `/auth/forgot-password` | Request a conditional recovery email; 202, or 503 when delivery is unconfigured |
+| POST | `/auth/reset-password` | Redeem a valid single-use token, change password and revoke sessions |
 | GET | `/dashboard` | Counts/distribution/activity for visible jobs, sample counts and loading state |
 | POST | `/jobs` | Create account-owned job from `{title,raw_text}`; 201 |
 | POST | `/jobs/upload` | Multipart `title` and `file`; 201 |

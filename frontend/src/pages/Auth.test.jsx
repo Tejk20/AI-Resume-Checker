@@ -27,6 +27,7 @@ it('creates a real account and enters the workspace without storing a token', as
   const user = { id: 'test-user', name: 'Jordan Test' };
   api.post.mockResolvedValue({ data: { user } });
   mount(); fill();
+  expect(screen.getByRole('link', { name: 'Forgot password?' })).toHaveAttribute('href', '/forgot-password');
   fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
   await screen.findByText('Your workspace');
   expect(api.post).toHaveBeenCalledWith('/auth/signup', { name: 'Jordan Test', email: 'jordan@example.test', password: 'A-test-passphrase-42' });

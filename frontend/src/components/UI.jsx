@@ -5,7 +5,7 @@ export function Heading({ eyebrow, title, children, action }) {
   return (
     <div className="page-heading">
       <div>
-        <p className="eyebrow">{eyebrow || "AVOM / TALENT INTELLIGENCE"}</p>
+        <p className="eyebrow">{eyebrow || "HIRELENS AI / TALENT INTELLIGENCE"}</p>
         <h1>{title}</h1>
         {children && <p className="muted">{children}</p>}
       </div>

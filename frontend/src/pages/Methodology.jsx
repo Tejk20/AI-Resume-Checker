@@ -14,7 +14,7 @@ const features = [
 export default function Methodology() {
   return (
     <>
-      <Heading title="Your candidate review, all in one place." eyebrow="ABOUT / AVOM RESUME INTELLIGENCE">
+      <Heading title="Your candidate review, all in one place." eyebrow="ABOUT / HIRELENS AI">
         A workspace for organizing resumes, comparing candidates, and exploring the experience behind each profile.
       </Heading>
       <div className="method-hero">
@@ -22,7 +22,7 @@ export default function Methodology() {
         <div>
           <h2>From job description to candidate insights.</h2>
           <p>
-            Avom Resume Intelligence brings your job requirements, resume uploads,
+            HireLens AI brings your job requirements, resume uploads,
             and candidate evaluations into a connected workflow. Spend less time
             moving between documents and more time reviewing the people who
             could fit your team.

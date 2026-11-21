@@ -1,23 +1,24 @@
 import hashlib
 import re
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.config import settings
-from app.models import User, AuthSession
+from app.models import User, AuthSession, PasswordResetToken
+from app.models.entities import now
 from app.services.auth import COOKIE, check_origin, create_session, current_user, hash_password, throttle, user_info, verify_password
+from app.services import password_reset
 
 router = APIRouter(prefix='/api/v1/auth', dependencies=[Depends(check_origin)])
 DB = Annotated[Session, Depends(get_db)]
 
 
-class Credentials(BaseModel):
+class EmailRequest(BaseModel):
     email: str = Field(min_length=3, max_length=254)
-    password: str = Field(min_length=10, max_length=128)
 
     @field_validator('email')
     @classmethod
@@ -26,6 +27,15 @@ class Credentials(BaseModel):
         if not re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', value):
             raise ValueError('Enter a valid email address.')
         return value
+
+
+class Credentials(EmailRequest):
+    password: str = Field(min_length=10, max_length=128)
+
+
+class ResetPassword(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+    password: str = Field(min_length=10, max_length=128)
 
 
 class Signup(Credentials):
@@ -71,6 +81,46 @@ def login(payload: Credentials, request: Request, response: Response, db: DB):
 @router.get('/me')
 def me(user=Depends(current_user)):
     return {'user':user_info(user), 'auth_required':settings.auth_required}
+
+
+@router.post('/forgot-password', status_code=202)
+def forgot_password(payload: EmailRequest, request: Request, tasks: BackgroundTasks, response: Response, db: DB):
+    throttle(request, 'reset:'+payload.email)
+    response.headers['Cache-Control'] = 'no-store'
+    # Fail the same way for every address until delivery is configured.
+    if not password_reset.delivery_available():
+        raise HTTPException(503, 'Password-reset email is not configured yet. Please contact the app administrator.')
+    user = db.scalar(select(User).where(User.email == payload.email))
+    if user:
+        link = password_reset.issue_token(db, user)
+        tasks.add_task(password_reset.deliver_reset_email, user.email, link)
+    return {'message': password_reset.RESET_MESSAGE}
+
+
+@router.post('/reset-password')
+def reset_password(payload: ResetPassword, request: Request, response: Response, db: DB):
+    throttle(request, 'reset-token:'+hashlib.sha256(payload.token.encode()).hexdigest())
+    digest = hashlib.sha256(payload.token.encode()).hexdigest()
+    try:
+        # A conditional UPDATE atomically claims the token, even across requests.
+        uid = db.scalar(update(PasswordResetToken).where(
+            PasswordResetToken.token_hash == digest,
+            PasswordResetToken.consumed_at.is_(None), PasswordResetToken.expires_at > now()
+        ).values(consumed_at=now()).returning(PasswordResetToken.user_id))
+        if uid is None:
+            raise HTTPException(400, 'This reset link is invalid or has expired. Request a new link.')
+        user = db.get(User, uid)
+        user.password_hash = hash_password(payload.password)
+        db.execute(delete(AuthSession).where(AuthSession.user_id == uid))
+        db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == uid,
+                                                  PasswordResetToken.token_hash != digest))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    response.delete_cookie(COOKIE, path='/', secure=settings.secure_cookies, httponly=True, samesite='lax')
+    response.headers['Cache-Control'] = 'no-store'
+    return {'message': 'Password updated. Sign in with your new password.'}
 
 
 @router.post('/logout', status_code=204)

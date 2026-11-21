@@ -11,6 +11,8 @@ Hosted writes require an authenticated `avom_session` cookie. Private jobs and n
 | POST | `/auth/login` | `{email,password}`; 200 user summary and session cookie |
 | GET | `/auth/me` | `{user,auth_required}`; user is null without a valid session |
 | POST | `/auth/logout` | 204; revoke session and clear cookie |
+| POST | `/auth/forgot-password` | `{email}`; generic 202; 503 if sender/key is not configured |
+| POST | `/auth/reset-password` | `{token,password}`; update password/revoke sessions; 400 for expired/used/invalid token |
 | GET | `/dashboard` | Saved jobs, parsed resumes, evaluated pairs, mean score, distribution and recent batches |
 | POST | `/jobs` | JSON `{title, raw_text}`; title 2–200 chars, text 30–100000; 201 extracted saved job |
 | POST | `/jobs/upload` | Multipart `title`, `file` PDF/DOCX; 201 saved job |
