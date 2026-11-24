@@ -4,11 +4,13 @@ import toast from "react-hot-toast";
 import { FileText, Sparkles, Save, ArrowRight } from "lucide-react";
 import { api, errorMessage } from "../services/api";
 import { Heading, Chips } from "../components/UI";
+import { useAuth } from "../components/AuthContext";
 import {
   suggestedJobTitles,
   canonicalJobTitle,
 } from "../components/jobOptions";
 export default function CreateJob({ refreshJobs, setSelected, jobs = [] }) {
+  const auth = useAuth();
   const [title, setTitle] = useState(""),
     [text, setText] = useState(""),
     [file, setFile] = useState(null),
@@ -109,6 +111,20 @@ export default function CreateJob({ refreshJobs, setSelected, jobs = [] }) {
     } catch (err) {
       setError(errorMessage(err));
       toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function updatePublication() {
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await api.put("/jobs/" + job.id + "/publication", {
+        is_published: !job.is_published,
+      });
+      setJob(data);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -274,6 +290,12 @@ export default function CreateJob({ refreshJobs, setSelected, jobs = [] }) {
                   <small className="muted">{help}</small>
                 </label>
               ))}
+              {auth?.user && !job.is_demo && <div className="job-publication">
+                <p className="muted">{job.is_published ? "This opening is visible on the public Job board." : "Publishing makes the job title and original description visible to anyone."}</p>
+                <button type="button" className="text-link" onClick={updatePublication} disabled={busy}>
+                  {job.is_published ? "Unpublish job" : "Publish to Job board"}
+                </button>
+              </div>}
               <button className="primary full" onClick={save} disabled={busy || job.is_demo}>
                 <Save size={17} />
                 {busy ? "Saving…" : "Save requirements & continue"}

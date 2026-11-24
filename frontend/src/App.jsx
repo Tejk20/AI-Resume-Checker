@@ -11,6 +11,7 @@ import {
   PanelLeftOpen,
   ScanLine,
   Settings,
+  BriefcaseBusiness,
 } from "lucide-react";
 import { api, errorMessage } from "./services/api";
 import Dashboard from "./pages/Dashboard";
@@ -25,8 +26,10 @@ import Auth from './pages/Auth';
 import PasswordRecovery from './pages/PasswordRecovery';
 import Brand from './components/Brand';
 import Profile from './pages/Profile';
+import JobBoard from './pages/JobBoard';
 const links = [
   ["/", "Overview", LayoutDashboard],
+  ["/job-board", "Job board", BriefcaseBusiness],
   ["/jobs/new", "Create job", FilePlus2],
   ["/upload", "Upload resumes", Upload],
   ["/rankings", "Candidate rankings", Users],
@@ -155,6 +158,7 @@ function Workspace() {
           )}
           <Routes key={user?.id || 'visitor'}>
             <Route path="/profile" element={<RequireAccount><Profile /></RequireAccount>} />
+            <Route path="/job-board" element={<JobBoard />} />
             <Route path="/" element={<Dashboard {...context} />} />
             <Route path="/jobs/new" element={<RequireAccount><CreateJob {...context} /></RequireAccount>} />
             <Route path="/upload" element={<RequireAccount><UploadResumes {...context} /></RequireAccount>} />

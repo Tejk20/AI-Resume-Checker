@@ -24,6 +24,7 @@ export default function UploadResumes({
     [drag, setDrag] = useState(false),
     [error, setError] = useState(""),
     [matching, setMatching] = useState(false),
+    [rankAfterUpload, setRankAfterUpload] = useState(false),
     [matchStatus, setMatchStatus] = useState(""),
     [count, setCount] = useState(0);
   const input = useRef();
@@ -58,31 +59,41 @@ export default function UploadResumes({
     return () => { alive = false; };
   }, [selected]);
   useEffect(() => {
-    if (!batch || !["pending", "processing"].includes(batch.status)) return;
+    if (!batch || !selected) return;
     let alive = true;
-    const timer = setInterval(async () => {
-      try {
-        const { data } = await api.get("/batches/" + batch.id);
-        if (alive) {
-          setBatch(data);
-          if (!["pending", "processing"].includes(data.status)) {
-            const r = await api.get(`/jobs/${selected}/candidates`);
-            setCount(r.data.total);
-            toast(
-              data.failed_files
-                ? "Batch finished with some errors."
-                : "Resumes ready for matching.",
-            );
-          }
+    const pending = ["pending", "processing"].includes(batch.status);
+    if (pending) {
+      const timer = setInterval(async () => {
+        try {
+          const { data } = await api.get("/batches/" + batch.id);
+          if (alive) setBatch(data);
+        } catch (e) {
+          if (alive) setError(errorMessage(e));
         }
+      }, 1200);
+      return () => {
+        alive = false;
+        clearInterval(timer);
+      };
+    }
+    async function refreshBatchResults() {
+      try {
+        const [candidates, job] = await Promise.all([
+          api.get(`/jobs/${selected}/candidates`),
+          api.get("/jobs/" + selected),
+        ]);
+        if (!alive) return;
+        setCount(candidates.data.total);
+        setMatchStatus(job.data.match_status);
+        setMatching(job.data.match_status === "processing");
+        if (job.data.match_status === "failed") setError(job.data.match_error);
+        toast(batch.failed_files ? "Batch finished with some errors." : "Resume processing complete.");
       } catch (e) {
         if (alive) setError(errorMessage(e));
       }
-    }, 1200);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
+    }
+    refreshBatchResults();
+    return () => { alive = false; };
   }, [batch?.id, batch?.status, selected]);
   useEffect(() => {
     if (!matching || !selected) return;
@@ -141,6 +152,7 @@ export default function UploadResumes({
         await refreshJobs().catch(() => {});
       }
       const { data } = await api.post(`/jobs/${target}/resumes`, form, {
+        ...(rankAfterUpload && { params: { rank_after_upload: true } }),
         onUploadProgress: (e) =>
           setProgress(Math.round((e.loaded / (e.total || 1)) * 100)),
       });
@@ -263,13 +275,18 @@ export default function UploadResumes({
               </div>
             </>
           )}
+          <label className="rank-after-upload">
+            <input type="checkbox" checked={rankAfterUpload} disabled={processing}
+              onChange={(event) => setRankAfterUpload(event.target.checked)} />
+            Rank candidates automatically after upload
+          </label>
           <button
             className="primary full"
             disabled={!selected || !files.length || processing}
             onClick={upload}
           >
             <UploadCloud size={17} />
-            {busy ? `Uploading ${progress}%` : sampleJob ? 'Upload to my own copy' : "Upload & process resumes"}
+            {busy ? `Uploading ${progress}%` : sampleJob ? 'Upload to my own copy' : rankAfterUpload ? "Upload & rank resumes" : "Upload & process resumes"}
           </button>
           {sampleJob && <p className="small muted">Your CV is only selected so far. Click above to create your private job and process it.</p>}
           {!selected && <p className="small muted">Select a job above to enable uploading.</p>}

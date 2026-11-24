@@ -33,7 +33,8 @@ def submit_reserved(fn, *args):
         raise
 
 
-def process_batch(batch_id: UUID, manifest: list[dict]):
+def process_batch(batch_id: UUID, manifest: list[dict], rank_after_upload: bool = False):
+    job_to_rank = None
     with SessionLocal() as db:
         batch = db.get(UploadBatch,batch_id)
         batch.status = 'processing'; db.commit()
@@ -61,7 +62,14 @@ def process_batch(batch_id: UUID, manifest: list[dict]):
                 db.commit()
                 path.unlink(missing_ok=True)
         batch.status = 'completed' if not batch.failed_files else 'partially_completed' if batch.processed_files else 'failed'
-        batch.completed_at = now(); db.commit()
+        batch.completed_at = now()
+        if rank_after_upload and batch.processed_files:
+            job = db.get(Job, batch.job_id)
+            job.match_status = 'processing'
+            job_to_rank = job.id
+        db.commit()
+    if job_to_rank is not None:
+        process_matches(job_to_rank)
 
 
 def process_matches(job_id: UUID, run_id: UUID | None = None):

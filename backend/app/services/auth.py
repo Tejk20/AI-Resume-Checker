@@ -100,4 +100,11 @@ def create_session(db, user, response):
 
 
 def user_info(user):
-    return {'id':str(user.id), 'name':user.name, 'email':user.email} if user else None
+    if user is None:
+        return None
+    return {
+        'id': str(user.id),
+        'name': user.name,
+        'email': user.email,
+        'created_at': user.created_at.isoformat() if user.created_at else None,
+    }

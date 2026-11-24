@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.core.config import settings, WEIGHTS, ALGORITHM_VERSION
 from app.models import Job, UploadBatch, Candidate, MatchResult, MatchingRun, MatchResultHistory
 from app.schemas.contracts import JobCreate, JobPatch, JobOut, BatchOut, CandidateOut, MatchOut, JobsPage, CandidatesPage, RankingsPage
-from app.schemas.contracts import MatchingRunOut, HistoryOut
+from app.schemas.contracts import MatchingRunOut, HistoryOut, PublicJobOut, JobPublication
 from app.services.history import archive_result
 from app.services.extraction import parse_job
 from app.services.documents import extract_document, DocumentError, safe_filename
@@ -63,6 +63,25 @@ def jobs(db: DB, offset: int=Query(0,ge=0), limit: int=Query(50,ge=1,le=100), us
 def get_job(job_id: UUID,db: DB,user=Depends(current_user)): return job_or_404(db,job_id,user)
 
 
+@router.get('/public-jobs', response_model=list[PublicJobOut])
+def public_jobs(db: DB, offset: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)):
+    query = select(Job).where(Job.is_published.is_(True)).order_by(Job.created_at.desc(), Job.id)
+    return db.scalars(query.offset(offset).limit(limit)).all()
+
+
+@router.put('/jobs/{job_id}/publication', response_model=JobOut)
+def set_job_publication(job_id: UUID, payload: JobPublication, db: DB, user=Depends(current_user)):
+    if user is None:
+        raise HTTPException(401, 'Sign in to publish a job.')
+    job = job_or_404(db, job_id, user, write=True)
+    if job.owner_id != user.id:
+        raise HTTPException(404, 'Job not found')
+    job.is_published = payload.is_published
+    db.commit()
+    db.refresh(job)
+    return job
+
+
 @router.post('/jobs/{job_id}/copy', response_model=JobOut, status_code=201)
 def copy_job(job_id: UUID, db: DB, user=Depends(current_user)):
     if settings.auth_required and not user:
@@ -95,7 +114,8 @@ def patch_job(job_id: UUID,payload: JobPatch,db: DB,user=Depends(current_user)):
 
 
 @router.post('/jobs/{job_id}/resumes',response_model=BatchOut,status_code=202)
-def upload_resumes(job_id: UUID,db: DB,files: list[UploadFile] = File(),user=Depends(current_user)):
+def upload_resumes(job_id: UUID, db: DB, files: list[UploadFile] = File(),
+                   user=Depends(current_user), rank_after_upload: bool = False):
     job = job_or_404(db,job_id,user,write=True)
     if not 1<=len(files)<=settings.max_batch_files: raise HTTPException(422,'Upload between 1 and 50 files.')
     if job.match_status=='processing' or active_upload(db,job_id): raise HTTPException(409,'Wait for current job processing to finish.')
@@ -121,7 +141,7 @@ def upload_resumes(job_id: UUID,db: DB,files: list[UploadFile] = File(),user=Dep
         db.rollback(); SLOTS.release()
         for path in paths: path.unlink(missing_ok=True)
         raise
-    submit_reserved(process_batch,batch.id,manifest)
+    submit_reserved(process_batch, batch.id, manifest, rank_after_upload)
     return batch
 
 

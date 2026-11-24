@@ -43,6 +43,7 @@ class JobOut(ORM):
     id: UUID
     title: str
     is_demo: bool = False
+    is_published: bool = False
     raw_text: str
     required_skills: list[str]
     preferred_skills: list[str]
@@ -54,6 +55,16 @@ class JobOut(ORM):
     match_error: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class PublicJobOut(ORM):
+    id: UUID
+    title: str
+    raw_text: str
+
+
+class JobPublication(BaseModel):
+    is_published: bool
 
 
 class BatchOut(ORM):

@@ -22,6 +22,7 @@ class Job(Identity, Base):
     title: Mapped[str] = mapped_column(String(200))
     owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('users.id'), index=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false')
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false')
     raw_text: Mapped[str] = mapped_column(Text)
     required_skills: Mapped[list] = mapped_column(J, default=list)
     preferred_skills: Mapped[list] = mapped_column(J, default=list)

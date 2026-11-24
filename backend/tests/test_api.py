@@ -93,12 +93,17 @@ def test_rematching_provenance_history_and_atomic_failure(client,monkeypatch):
     monkeypatch.setattr(workers,'SemanticEvaluation',Evaluation)
     j=create(client)
     path=next((Path(__file__).resolve().parents[2]/'sample_data/synthetic_resumes').glob('*.pdf'))
-    upload=client.post('/api/v1/jobs/'+j['id']+'/resumes',files=[('files',(path.name,path.read_bytes()))])
-    assert client.get('/api/v1/batches/'+upload.json()['id']).json()['processed_files']==1
     endpoint='/api/v1/jobs/'+j['id']
-    for _ in range(2):
-        response=client.post(endpoint+'/match')
-        assert response.status_code==202 and response.json()['run_id']
+    upload = client.post(endpoint + '/resumes?rank_after_upload=true', files=[
+        ('files', (path.name, path.read_bytes())),
+        ('files', ('invalid.pdf', b'not a pdf')),
+    ])
+    assert upload.status_code == 202
+    batch = client.get('/api/v1/batches/' + upload.json()['id']).json()
+    assert batch['status'] == 'partially_completed'
+    assert client.get(endpoint + '/rankings').json()['total'] == 1
+    response = client.post(endpoint + '/match')
+    assert response.status_code == 202 and response.json()['run_id']
     results=client.get(endpoint+'/rankings').json()
     assert results['total']==1
     result=results['items'][0]
@@ -158,14 +163,23 @@ def test_signup_login_logout_expiry_and_password_storage(client,monkeypatch):
 def test_account_isolation_covers_jobs_batches_candidates_and_dashboard(client,monkeypatch):
     monkeypatch.setattr(settings,'auth_required',True)
     assert client.post('/api/v1/jobs',json={'title':'Private job','raw_text':'Build reliable Python backend services.'}).status_code==401
-    signup_account(client,'first')
+    owner = signup_account(client,'first')
     job=create(client); endpoint='/api/v1/jobs/'+job['id']
     path=next((Path(__file__).resolve().parents[2]/'sample_data/synthetic_resumes').glob('*.pdf'))
     batch=client.post(endpoint+'/resumes',files=[('files',(path.name,path.read_bytes()))]).json()
     cid=client.get(endpoint+'/candidates').json()['items'][0]['id']
     assert client.get('/api/v1/dashboard').json()['total_resumes']==1
+    board = '/api/v1/public-jobs'
+    publication = endpoint + '/publication'
+    assert client.get(board).json() == []
+    assert client.put(publication, json={'is_published': True}).json()['is_published'] is True
+    public_listing = {'id': job['id'], 'title': job['title'], 'raw_text': job['raw_text']}
     assert client.post('/api/v1/auth/logout').status_code==204
+    assert client.get(board).json() == [public_listing]
+    assert client.put(publication, json={'is_published': False}).status_code == 401
     signup_account(client,'second')
+    assert client.get(board).json() == [public_listing]
+    assert client.put(publication, json={'is_published': False}).status_code == 404
     assert client.get('/api/v1/jobs').json()['total']==0
     assert client.get('/api/v1/dashboard').json()['total_resumes']==0
     for route in [endpoint,endpoint+'/candidates',endpoint+'/rankings',endpoint+'/runs',
@@ -175,6 +189,12 @@ def test_account_isolation_covers_jobs_batches_candidates_and_dashboard(client,m
     assert client.patch(endpoint,json={'required_skills':['SQL']}).status_code==404
     assert client.post(endpoint+'/match').status_code==404
     assert client.post(endpoint+'/resumes',files=[('files',(path.name,path.read_bytes()))]).status_code==404
+    assert client.post('/api/v1/auth/logout').status_code == 204
+    assert client.post('/api/v1/auth/login', json={
+        'email': owner['email'], 'password': 'Fictional-Test-Passphrase-42',
+    }).status_code == 200
+    assert client.put(publication, json={'is_published': False}).json()['is_published'] is False
+    assert client.get(board).json() == []
 
 
 def test_public_sample_is_readable_but_not_editable_and_cross_site_auth_is_blocked(client,monkeypatch):
